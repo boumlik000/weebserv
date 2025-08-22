@@ -94,6 +94,7 @@ bool ConfigFile::isValidLocationKey(const std::string& key) {
     valid_keys.insert("cgi-info");
     valid_keys.insert("redirect");
     
+    //chnu hia dik return , mafhmthach!XD
     return valid_keys.find(key) != valid_keys.end();
 }
 
@@ -115,7 +116,8 @@ bool ConfigFile::validateSyntax(const std::string& line) {
     return true;
 }
 
-bool ConfigFile::parseListen(const std::string& value) {
+bool ConfigFile::parseListen(const std::string& value) 
+{
     std::vector<std::string> parts = split(value, ' ');
     if (parts.size() != 2) {
         std::cerr << "Error: Invalid listen format: " << value << std::endl;
@@ -258,11 +260,11 @@ bool ConfigFile::parseLocation(const std::string& line) {
 
     for (size_t i = 1; i < parts.size(); i++) {
         std::vector<std::string> param = split(parts[i], '=');
+        //ila kant lformat dial the whole key fiha ktr mn 2
         if (param.size() != 2) {
-            std::cerr << "Error: Invalid parameter format: " << parts[i] << std::endl;
+            std::cerr << "Error: Invalid parameter format1111: " << parts[i] << std::endl;
             return false;
         }
-
         std::string param_key = param[0];
         std::string param_value = param[1];
 
@@ -398,19 +400,21 @@ bool ConfigFile::parseConfigFile(const std::string& filename)
         if (trimmed.find("listen:") == 0) 
         {
             if (!parseListen(trim(trimmed.substr(7)))) return false;
-        } else if (trimmed.find("error-page:") == 0) {
+        } else if (trimmed.find("error-page:") == 0) 
+        {
             if (!parseErrorPage(trim(trimmed.substr(11)))) return false;
-        } else if (trimmed.find("client-max-body-size:") == 0) {
+        } else if (trimmed.find("client-max-body-size:") == 0)
+        {
             if (!parseClientMaxBodySize(trim(trimmed.substr(21)))) return false;
-        } else if (trimmed.find("location:") == 0) {
-            if (!parseLocation(trimmed)) return false;
-
+        } else if (trimmed.find("location:") == 0)
+        {
             size_t colon_pos = trimmed.find(':');
             std::string rest = trim(trimmed.substr(colon_pos + 1));
             std::vector<std::string> parts = split(rest, ' ');
             if (!parts.empty() && parts[0] == "/") {
                 found_root_location = true;
             }
+            if (!parseLocation(trimmed)) return false;
         } else {
             std::cerr << "Error: Unknown directive at line " << line_number << ": " << trimmed << std::endl;
             return false;
