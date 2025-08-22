@@ -2,7 +2,7 @@ NAME = webserv
 CC = c++
 CFLAGS= -Wall -Wextra -Werror -std=c++98
 
-SRC = wb0.cpp runserver.cpp main.cpp #conf.cpp
+SRC = parsing.cpp chekers.cpp main.cpp 
 
 all:
 	$(CC) $(CFLAGS) $(SRC) -o $(NAME)

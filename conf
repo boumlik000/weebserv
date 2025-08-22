@@ -1,7 +1,0 @@
-listen:0.0.0.0 8080
-listen:0.0.0.0 8081
-error_page:404 /error_pages/404.html
-error_page:500 /error_pages/500.html
-error_page:403 /error_pages/403.html
-client_max_body_size:10
-location:/ allowed_methods=GET_POST_DELETE root=/var/www/html autoindex=on index=index.html upload=/var/www/uploads cgi_info=/usr/bin/python3_.py  redirect=301_/new-location

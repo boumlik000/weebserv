@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/mboumlik/Desktop/weebserv",
-      "program": "/home/mboumlik/Desktop/weebserv/build/Debug/outDebug",
+      "cwd": "/home/mboumlik/Desktop/webljama3a",
+      "program": "/home/mboumlik/Desktop/webljama3a/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
