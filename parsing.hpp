@@ -98,6 +98,7 @@ class ConfigFile
 class Webserv {
     ConfigFile config;
     public:
+        int pars_cfile(int ac, char** av);
         int start_event(int ac, char** av);
 };
 
