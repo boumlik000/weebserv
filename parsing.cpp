@@ -30,7 +30,7 @@ void ConfigFile::printParsedConfig() const {
     }
     std::cout << "\nError Pages:" << std::endl;
     for (std::map<int, std::string>::const_iterator it = error_pages.begin(); it != error_pages.end(); ++it) {
-        std::cout << "  - Code " << it->first << ": " << it->second << std::endl;
+        std::cout << "  - Code " << it->first << ": " << it->second << " message: " << getErrorPageMessage(it->first) << std::endl;
     }
     std::cout << "\nClient Max Body Size: " << max_size << std::endl;
     std::cout << "\nLocations:" << std::endl;
@@ -75,7 +75,41 @@ void ConfigFile::printParsedConfig() const {
     std::cout << "--------------------------" << std::endl;
 }
 
+std::string ConfigFile::getErrorPage(int status_code) const {
+    std::map<int, std::string>::const_iterator it = error_pages.find(status_code);
+    if (it != error_pages.end()) {
+        return it->second;
+    }
+    // Return empty string if status code not found
+    return "";
+}
 
+std::string ConfigFile::getErrorPageMessage(int status_code) const {
+    switch (status_code) {
+        case 400:
+            return "Bad Request";
+        case 401:
+            return "Unauthorized";
+        case 403:
+            return "Forbidden";
+        case 404:
+            return "Not Found";
+        case 408:
+            return "Request Timeout";
+        case 500:
+            return "Internal Server Error";
+        case 501:
+            return "Not Implemented";
+        case 502:
+            return "Bad Gateway";
+        case 503:
+            return "Service Unavailable";
+        case 504:
+            return "Gateway Timeout";
+        default:
+            return "Unknown Error";
+    }
+}
 const std::vector<struct ListenInfo>& ConfigFile::getListenInfos() const { return listen_infos; }
 const std::map<int, std::string>& ConfigFile::getErrorPages() const { return error_pages; }
 unsigned int ConfigFile::getMaxSize() const { return max_size; }

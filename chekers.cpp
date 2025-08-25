@@ -95,6 +95,7 @@ bool ConfigFile::isValidLocationKey(const std::string& key) {
     valid_keys.insert("redirect");
     
     //chnu hia dik return , mafhmthach!XD
+
     return valid_keys.find(key) != valid_keys.end();
 }
 
@@ -257,6 +258,7 @@ bool ConfigFile::parseLocation(const std::string& line) {
 
     std::set<std::string> seen_keys;
     std::set<std::string> all_cgi_extensions;
+    bool has_allowed_methods = false; // Track if allowed-methods was specified
 
     for (size_t i = 1; i < parts.size(); i++) {
         std::vector<std::string> param = split(parts[i], '=');
@@ -281,6 +283,7 @@ bool ConfigFile::parseLocation(const std::string& line) {
         seen_keys.insert(param_key);
 
         if (param_key == "allowed-methods") {
+            has_allowed_methods = true; // Mark that allowed-methods was specified
             std::vector<std::string> methods = split(param_value, '_');
             for (size_t j = 0; j < methods.size(); j++) {
                 if (methods[j].empty()) {
@@ -345,6 +348,13 @@ bool ConfigFile::parseLocation(const std::string& line) {
             config.redirect_path = redirect_parts[1];
             config.has_redirect = true;
         }
+    }
+
+    // NEW: Set default allowed methods if none were specified
+    if (!has_allowed_methods) {
+        config.allowed_methods.push_back("GET");
+        config.allowed_methods.push_back("POST");
+        config.allowed_methods.push_back("DELETE");
     }
 
     if (!validateLocationConfig(config)) {
@@ -432,7 +442,7 @@ bool ConfigFile::parseConfigFile(const std::string& filename)
     default_codes.push_back(501);
     default_codes.push_back(502);
     default_codes.push_back(503);
-    default_codes.push_back(504);
+    // default_codes.push_back(504);
 
     for (size_t i = 0; i < default_codes.size(); ++i) {
         int code = default_codes[i];

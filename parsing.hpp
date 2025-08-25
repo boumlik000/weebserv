@@ -40,7 +40,38 @@ struct LocationConfig {
     std::string redirect_code;
     std::string redirect_path;
     bool has_redirect;
+    // bool isMethodAllowed(std::string &method) const
+    // {
+    //     for(int i = 0; i < allowed_methods.size(); i++)
+    //     {
+    //         if(allowed_methods[i] == method)
+    //             return true;
+    //     }
+    //     return false;
+    // }
+    // int maxMatch(std::string &s1, std::string &s2)
+    // {
+    //     int count = -1;
+    //     while(++count && s1[count] && s2[count] && s1[count] == s2[count]);
+    //     return count;
+    // }
+    // LocationConfig *findLocationFor(std::string &uri)
+    // {
+    //     int max = 0;
+    //     LocationConfig *chosen = NULL;
 
+    //     for(int i = 0; i < location_configs.size(); i++)
+    //     {
+    //         if(location_configs[i].path == uri)
+    //             return &location_configs[i];
+    //         int match = maxMatch(location_configs[i].path, uri);
+    //         if(match > max)
+    //         {
+    //             chosen = &location_configs[i];
+    //             max = match;
+    //         }
+    //     }
+    // }
     // Constructor to set default values
     LocationConfig() : index("index."), autoindex("off"), upload("pages/upload") , has_redirect(false) {}
 };
@@ -85,9 +116,13 @@ class ConfigFile
         // Getters
         const std::vector<struct ListenInfo>& getListenInfos() const;
         const std::map<int, std::string>& getErrorPages() const;
+        // Enhanced error page getters
+        // const std::map<int, std::string>& getErrorPages() const; // Keep the original
+        std::string getErrorPage(int status_code) const;// Get path by status code
+        std::string getErrorPageMessage(int status_code) const;
         unsigned int getMaxSize() const;
         const std::vector<LocationConfig>& getLocationConfigs() const;
-
+        
         // Setters (if needed for testing)
         void setMaxSize(unsigned int size);
         void addErrorPage(int code, const std::string& path);
