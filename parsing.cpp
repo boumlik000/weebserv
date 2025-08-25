@@ -129,23 +129,23 @@ void ConfigFile::addListenInfo(const std::string& ip, int port) {
 
 void ConfigFile::addLocationConfig(const LocationConfig& config) { location_configs.push_back(config); }
 
-int Webserv::pars_cfile(int ac, char** av) {
+int ConfigFile::pars_cfile(int ac, char** av) {
    if (ac != 2) {
         std::cerr << "Usage: " << av[0] << " <config_file>" << std::endl;
         return 1;
     }
     std::string config_file = av[1];
-    if (!config.parseConfigFile(config_file)) {
+    if (!parseConfigFile(config_file)) {
         std::cerr << "Failed to parse configuration file: " << config_file << std::endl;
         return 1;
     }
     std::cout << "Configuration parsed successfully!" << std::endl;
-    config.printParsedConfig();
+    printParsedConfig();
     return 0;
 }
 
 int Webserv::start_event(int ac, char** av) {
-    pars_cfile(ac,av);
+    config.pars_cfile(ac,av);
     
     return 0;
 }

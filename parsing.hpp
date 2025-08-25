@@ -128,12 +128,12 @@ class ConfigFile
         void addErrorPage(int code, const std::string& path);
         void addListenInfo(const std::string& ip, int port);
         void addLocationConfig(const LocationConfig& config);
+        int pars_cfile(int ac, char** av);
 };
 
 class Webserv {
     ConfigFile config;
     public:
-        int pars_cfile(int ac, char** av);
         int start_event(int ac, char** av);
 };
 

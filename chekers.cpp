@@ -442,7 +442,6 @@ bool ConfigFile::parseConfigFile(const std::string& filename)
     default_codes.push_back(501);
     default_codes.push_back(502);
     default_codes.push_back(503);
-    // default_codes.push_back(504);
 
     for (size_t i = 0; i < default_codes.size(); ++i) {
         int code = default_codes[i];
