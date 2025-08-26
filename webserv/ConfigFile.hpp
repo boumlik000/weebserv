@@ -42,11 +42,14 @@ struct LocationConfig {
     bool has_redirect;
     bool isMethodAllowed(const std::string &method) const
     {
+        std::cerr<<"hanta asahbi : "<<allowed_methods.size()<<std::endl;
         for(int i = 0; i < allowed_methods.size(); i++)
         {
+            std::cerr<<allowed_methods[i]<<std::endl;
             if(allowed_methods[i] == method)
                 return true;
         }
+        std::cerr<<"FOR FIND "<<method<<std::endl;
         return false;
     }
 
@@ -116,12 +119,14 @@ class ConfigFile
         LocationConfig findLocationFor(const std::string &uri) const {
             int max = 0;
             LocationConfig chosen;
-    
+            std::cerr<<"azabi ha ch7al fih "<<uri<<std::endl;
             for(int i = 0; i < location_configs.size(); i++)
             {
+                std::cerr<<"azabi ha ch7al fih "<<120<<std::endl;
                 if(location_configs[i].path == uri)
                     return location_configs[i];
                 int match = maxMatch(location_configs[i].path, uri);
+                std::cerr<<"azabi ha ch7al fih "<<match<<std::endl;
                 if(match > max)
                 {
                     chosen = location_configs[i];
@@ -135,6 +140,7 @@ class ConfigFile
 class Webserv {
     ConfigFile config;
     public:
+        const ConfigFile& getConfig() const{return config;};
         int pars_cfile(int ac, char** av);
         int start_event(int ac, char** av);
 };

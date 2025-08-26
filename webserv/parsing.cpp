@@ -140,7 +140,7 @@ int Webserv::pars_cfile(int ac, char** av) {
         return 1;
     }
     std::cout << "Configuration parsed successfully!" << std::endl;
-    config.printParsedConfig();
+    // config.printParsedConfig();
     return 0;
 }
 

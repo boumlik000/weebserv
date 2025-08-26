@@ -15,6 +15,7 @@ enum ClientState {
     SENDING_RESPONSE,   // كنصيفطو فالجواب
     DONE                // سالينا معاه، خاصو يتمسح
 };
+static ConfigFile g_default_config;
 
 class Client {
 public:

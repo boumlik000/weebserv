@@ -14,6 +14,7 @@ void Client::readRequest() {
     const int BUFFER_SIZE = 4096; // 4KB
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read = recv(_fd, buffer, BUFFER_SIZE, 0);
+    std::cout<<"request : "<<buffer<<std::endl;
     if (bytes_read > 0) {
         _requestBuffer.append(buffer, bytes_read);
         // (هنا خاصك دير لوجيك باش تعرف واش الطلب كمل)
@@ -36,6 +37,7 @@ void Client::sendResponse() {
         return; // مكنديرو والو إلى مكناش فالحالة ديال الإرسال
     }
     std::string response_str = _httpResponse.buildResponseString();
+    std::cout<<"response : "<<response_str<<std::endl;
     ssize_t bytes_sent = send(_fd, response_str.c_str() + _bytesSent, response_str.length() - _bytesSent, 0);
     if (bytes_sent > 0) {
         _bytesSent += bytes_sent; // كنزيدو داكشي لي تصيفط على المجموع
@@ -52,12 +54,14 @@ void Client::sendResponse() {
 }
 // --- 1. Default Constructor ---
 // كنحتاجوه باش نقدر نديرو std::map<int, Client>
-Client::Client() : _fd(-1), _state(AWAITING_REQUEST), _config(ConfigFile()) {
+Client::Client() : _fd(-1), _state(AWAITING_REQUEST), _config(g_default_config) {
     // كنعطيو للـ fd قيمة غالطة (-1) باش نعرفو أنه مزال ما تخدم
 }
 
 // --- Constructor لي كنخدمو بيه بصح ---
 Client::Client(int client_fd, const ConfigFile& conf) : _fd(client_fd), _config(conf),_state(AWAITING_REQUEST) {
+    std::cout << "HMMMMMMMMMMMMMMMm" << std::endl;
+    _config.findLocationFor("/");
     // فاش كنصاوبو client جديد، كنعطيوه الـ fd ديالو مباشرة
     // والحالة الأولية كتكون هي كنتسناو الطلب
 }
@@ -219,7 +223,7 @@ void Client::process() {
     const LocationConfig& location = _config.findLocationFor(_httpRequest.getUri());
     // 4. التحقق من صحة الطلب بناءً على القواعد
     if (!location.isMethodAllowed(_httpRequest.getMethod())) {
-        _buildErrorResponse(405); // 405 Method Not Allowed
+        _buildErrorResponse(404); // 405 Method Not Allowed
         return;
     }
     // 5. تنفيذ الإجراء على حسب الـ Method

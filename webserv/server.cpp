@@ -1,6 +1,6 @@
 #include"server.hpp"
 
-Server::Server(): config(ConfigFile()){
+Server::Server(): config(g_default_config){
 }
 Server::~Server(){
     for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); ++it) {
@@ -34,7 +34,6 @@ void Server::setupServer(){
         std::cerr<<"creation epoll failed"<<std::endl;
         return ;
     }
-
     const std::vector<ListenInfo>& listenInfos = config.getListenInfos();
 
     for (size_t i = 0; i < listenInfos.size(); ++i) {
@@ -116,7 +115,7 @@ void    Server::handleClientEvent(int client_fd){
         return;
     }
     if (client.isDone()) {
-        removeClient(client_fd);
+        // removeClient(client_fd);
     }
 
 }
