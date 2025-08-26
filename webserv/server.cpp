@@ -1,6 +1,6 @@
 #include"server.hpp"
 
-Server::Server(){
+Server::Server(): config(ConfigFile()){
 }
 Server::~Server(){
     for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); ++it) {
@@ -15,13 +15,15 @@ Server::~Server(){
         close(epoll_fd);
     }
 }
-
+Server::Server(const ConfigFile& _config) : config(_config){
+    run();
+}
 
 Server& Server::operator=(const Server& rhs){
     (void)rhs;
     return *this;
 }
-Server::Server(const Server& src):epoll_fd(src.epoll_fd){
+Server::Server(const Server& src):config(src.config), epoll_fd(src.epoll_fd){
     listening_fds = src.listening_fds;
     clients = src.clients;
 }
@@ -36,7 +38,7 @@ void Server::setupServer(){
     const std::vector<ListenInfo>& listenInfos = config.getListenInfos();
 
     for (size_t i = 0; i < listenInfos.size(); ++i) {
-        int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+        int server_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
         if (server_fd == -1) {
             perror("socket");
             continue;
@@ -58,7 +60,7 @@ void Server::setupServer(){
             continue;
         }
         
-        fcntl(server_fd, F_SETFL, O_NONBLOCK);
+        // fcntl(server_fd, F_SETFL, O_NONBLOCK);
     
         std::cout << "Server listening on " << listenInfos[i].ip << ":" << listenInfos[i].port << std::endl;
     
@@ -85,12 +87,12 @@ void    Server::removeClient(int client_fd){
 void    Server::handleNewConnection(int listener_fd){
         struct sockaddr_in client_addr;
         socklen_t client_len = sizeof(client_addr);
-        int client_fd = accept(listener_fd, (struct sockaddr *)&client_addr, &client_len);
+        int client_fd = accept4(listener_fd, (struct sockaddr *)&client_addr, &client_len, SOCK_NONBLOCK);
         if (client_fd == -1) {
             perror("accept");
             return;
         }
-        fcntl(client_fd, F_SETFL, O_NONBLOCK);
+        // fcntl(client_fd, F_SETFL, O_NONBLOCK);
         struct epoll_event event;
         event.events = EPOLLIN;
         event.data.fd = client_fd;
@@ -99,7 +101,7 @@ void    Server::handleNewConnection(int listener_fd){
             close(client_fd);
             return;
         }
-        clients[client_fd] = Client(client_fd);
+        clients[client_fd] = Client(client_fd, config);
         std::cout << "New connection established with fd: " << client_fd << std::endl;
 }
 void    Server::handleClientEvent(int client_fd){

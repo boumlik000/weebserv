@@ -40,6 +40,15 @@ struct LocationConfig {
     std::string redirect_code;
     std::string redirect_path;
     bool has_redirect;
+    bool isMethodAllowed(const std::string &method) const
+    {
+        for(int i = 0; i < allowed_methods.size(); i++)
+        {
+            if(allowed_methods[i] == method)
+                return true;
+        }
+        return false;
+    }
 
     // Constructor to set default values
     LocationConfig() : index("index."), autoindex("off"), upload("pages/upload") , has_redirect(false) {}
@@ -85,14 +94,42 @@ class ConfigFile
         // Getters
         const std::vector<struct ListenInfo>& getListenInfos() const;
         const std::map<int, std::string>& getErrorPages() const;
+        // Enhanced error page getters
+        // const std::map<int, std::string>& getErrorPages() const; // Keep the original
+        std::string getErrorPage(int status_code) const;// Get path by status code
+        std::string getErrorPageMessage(int status_code) const;
         unsigned int getMaxSize() const;
         const std::vector<LocationConfig>& getLocationConfigs() const;
-
+        
         // Setters (if needed for testing)
         void setMaxSize(unsigned int size);
         void addErrorPage(int code, const std::string& path);
         void addListenInfo(const std::string& ip, int port);
         void addLocationConfig(const LocationConfig& config);
+
+        int maxMatch(const std::string &s1, const std::string &s2) const
+        {
+            int count = -1;
+            while(++count && s1[count] && s2[count] && s1[count] == s2[count]);
+            return count;
+        }
+        LocationConfig findLocationFor(const std::string &uri) const {
+            int max = 0;
+            LocationConfig chosen;
+    
+            for(int i = 0; i < location_configs.size(); i++)
+            {
+                if(location_configs[i].path == uri)
+                    return location_configs[i];
+                int match = maxMatch(location_configs[i].path, uri);
+                if(match > max)
+                {
+                    chosen = location_configs[i];
+                    max = match;
+                }
+            }
+            return chosen;
+        }
 };
 
 class Webserv {
@@ -101,6 +138,4 @@ class Webserv {
         int pars_cfile(int ac, char** av);
         int start_event(int ac, char** av);
 };
-
-
 #endif // WEBSERV_HPP

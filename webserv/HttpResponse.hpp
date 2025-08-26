@@ -1,26 +1,34 @@
 #pragma once
 
 #include <string>
-#include <map>
 #include <vector>
+#include <map>
 
 class HttpResponse {
 public:
-    // OCF and default constructor
+    // === Orthodox Canonical Form (OCF) ===
     HttpResponse();
-    // ... other OCF members ...
+    HttpResponse(const HttpResponse& src);
+    HttpResponse& operator=(const HttpResponse& rhs);
     ~HttpResponse();
 
-    // Setters to build the response
-    void setStatusCode(int code, const std::string& message);
+    // === Setters باش نعمرو الجواب ===
+    void setStatusCode(int code);
+    void setStatusMessage(const std::string& message);
     void addHeader(const std::string& key, const std::string& value);
-    void setBody(const std::vector<char>& body);
     void setBody(const std::string& body);
+    void setBody(const std::vector<char>& body);
 
-    // Converts the response object into a sendable string
-    std::string buildResponse() const;
+    // === Getters باش نجبدو المعلومات (مفيدين) ===
+    int getStatusCode() const;
+    const std::string& getStatusMessage() const;
+    const std::vector<char>& getBody() const;
+
+    // === الدالة الرئيسية لي كتجمع كلشي ===
+    std::string buildResponseString() const;
 
 private:
+    // === المتغيرات الأعضاء ===
     int                                 _statusCode;
     std::string                         _statusMessage;
     std::map<std::string, std::string>  _headers;

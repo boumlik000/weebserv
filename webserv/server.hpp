@@ -17,10 +17,12 @@ public:
     Server& operator=(const Server& rhs);
     ~Server();
 
+    Server(const ConfigFile& _config);
 
     void run();
 
 private:
+    const ConfigFile&   config;
     int                 epoll_fd;
     std::vector<int>    listening_fds;
     std::map<int, Client> clients;

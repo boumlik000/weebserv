@@ -1,10 +1,12 @@
 #pragma once
 
+#include "ConfigFile.hpp" // الملف لي فيه الكلاس ديال الكونفيغ ديالك
 #include <string>
 #include <sys/socket.h>
 #include "HttpRequest.hpp"  // كلاس خاصة بمعالجة وتخزين الطلب
 #include "HttpResponse.hpp" // كلاس خاصة ببناء الجواب
-
+#include <fstream> // باش نقراو الملفات
+#include <sstream> // باش نحولو الأرقام لـ string
 // enum باش نتبعو الحالة ديال الكليان
 enum ClientState {
     AWAITING_REQUEST,   // كنتسناو الطلب يوصل
@@ -18,7 +20,7 @@ class Client {
 public:
     // OCF + Constructor لي غنخدمو بيه
     Client();
-    Client(int client_fd);
+    Client(int client_fd, const ConfigFile& conf);
     Client(const Client& src);
     Client& operator=(const Client& rhs);
     ~Client();
@@ -27,6 +29,11 @@ public:
     void readRequest();  // كتستعمل recv باش تقرا الطلب
     void process();      // كتعالج الطلب وكتصاوب الجواب
     void sendResponse(); // كتستعمل send باش تصيفط الجواب
+    void _handleGet(const LocationConfig& location);
+    void _buildErrorResponse(int statusCode);
+    void _handleDelete(const LocationConfig& location);
+    void _handlePost(const LocationConfig& location);
+        
 
     // === دوال مساعدة ===
     int getFd() const;
@@ -34,7 +41,8 @@ public:
     bool isDone() const;
 
 private:
-    int                 _fd;              // السوكيت ديال هاد الكليان (رقم الغرفة)
+    int                 _fd;
+    const ConfigFile&        _config;              // السوكيت ديال هاد الكليان (رقم الغرفة)
     ClientState         _state;           // الحالة الحالية ديالو
     
     std::string         _requestBuffer;   // مخزن مؤقت كنجمعو فيه الطلب لي كيجي مقطع
