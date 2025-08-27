@@ -50,6 +50,6 @@ private:
     HttpRequest         _httpRequest;     // أوبجيكت فيه الطلب مفكك ونقي
     HttpResponse        _httpResponse;    // أوبجيكت فيه الجواب لي غادي نصيفطو
 
-    size_t              _bytesSent;       // شحال صيفطنا من الجواب (باش نعرفو فين وصلنا)
+    size_t              _bytesSent = 0;       // شحال صيفطنا من الجواب (باش نعرفو فين وصلنا)
     time_t              _lastActivity;    // آخر وقت كان فيه نشاط (باش نحسبو الـ timeout)
 };

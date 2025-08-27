@@ -29,7 +29,7 @@ Server::Server(const Server& src):config(src.config), epoll_fd(src.epoll_fd){
 }
 
 void Server::setupServer(){
-    epoll_fd = epoll_create1(0);
+    epoll_fd = epoll_create1(EPOLL_CLOEXEC);
     if (epoll_fd == -1) {
         std::cerr<<"creation epoll failed"<<std::endl;
         return ;
@@ -84,41 +84,99 @@ void    Server::removeClient(int client_fd){
     clients.erase(client_fd);
 }
 void    Server::handleNewConnection(int listener_fd){
-        struct sockaddr_in client_addr;
-        socklen_t client_len = sizeof(client_addr);
-        int client_fd = accept4(listener_fd, (struct sockaddr *)&client_addr, &client_len, SOCK_NONBLOCK);
-        if (client_fd == -1) {
-            perror("accept");
-            return;
+    struct sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    int client_fd = accept4(listener_fd, (struct sockaddr *)&client_addr, &client_len, SOCK_NONBLOCK);
+    if (client_fd == -1) {
+       if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            std::cerr << "Failed to accept connection: " << strerror(errno) << std::endl;
         }
-        // fcntl(client_fd, F_SETFL, O_NONBLOCK);
-        struct epoll_event event;
-        event.events = EPOLLIN;
-        event.data.fd = client_fd;
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1) {
-            perror("epoll_ctl: add client_fd");
-            close(client_fd);
-            return;
-        }
-        clients[client_fd] = Client(client_fd, config);
-        std::cout << "New connection established with fd: " << client_fd << std::endl;
-}
-void    Server::handleClientEvent(int client_fd){
-    Client& client = clients[client_fd];
-    try {
-        client.readRequest(); // خلي الكليان يتكلف بالقراءة
-        client.process();     // خليه يعالج الطلب ويصاوب الجواب
-        client.sendResponse();// خليه يصيفط الجواب
-    } catch (const std::exception& e) {
-        std::cerr << "Error handling client " << client_fd << ": " << e.what() << std::endl;
-        removeClient(client_fd); // إلى وقع شي خطأ، كنمسحوه
         return;
     }
-    if (client.isDone()) {
-        // removeClient(client_fd);
+    clients.insert(std::make_pair(client_fd, Client(client_fd, config)));
+    // fcntl(client_fd, F_SETFL, O_NONBLOCK);
+    struct epoll_event event;
+    event.events = EPOLLIN | EPOLLOUT | EPOLLET;;
+    event.data.fd = client_fd;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1) {
+        perror("epoll_ctl: add client_fd");
+        close(client_fd);
+        return;
     }
+    // clients[client_fd] = Client(client_fd, config);
 
+    
+    std::cout << "New connection established with fd: " << client_fd << std::endl;
 }
+// void    Server::handleNewConnection(int listener_fd){
+//         struct sockaddr_in client_addr;
+//         socklen_t client_len = sizeof(client_addr);
+//         int client_fd = accept4(listener_fd, (struct sockaddr *)&client_addr, &client_len, SOCK_NONBLOCK);
+//         if (client_fd == -1) {
+//             perror("accept");
+//             return;
+//         }
+//         // fcntl(client_fd, F_SETFL, O_NONBLOCK);
+//         struct epoll_event event;
+//         event.events = EPOLLIN;
+//         event.data.fd = client_fd;
+//         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1) {
+//             perror("epoll_ctl: add client_fd");
+//             close(client_fd);
+//             return;
+//         }
+//         clients[client_fd] = Client(client_fd, config);
+//         std::cout << "New connection established with fd: " << client_fd << std::endl;
+// }
+void Server::handleClientEvent(int client_fd, uint32_t events) {
+    std::map<int, Client>::iterator it = clients.find(client_fd);
+        if (it == clients.end()) {
+            return;
+        }
+        
+        Client* client = &it->second;
+        
+    if (events & (EPOLLHUP | EPOLLERR)) {
+            // Connection closed or error
+            std::cout << "Client disconnected (fd: " << client_fd << ")" << std::endl;
+            removeClient(client_fd);
+            return;
+    }
+    if (events & EPOLLIN) {
+        if (client->getState() == AWAITING_REQUEST) {
+            client->readRequest();
+        }
+        if (client->getState() == REQUEST_RECEIVED) {
+            client->process();
+            // دابا الجواب واجد ف _fullResponse و الحالة هي SENDING_RESPONSE
+        }
+    }
+    if (events & EPOLLOUT) {
+        if (client->getState() == SENDING_RESPONSE) {
+            client->sendResponse();
+        }
+    }
+    if (client->isDone()) {
+        // removeClient(client_fd);
+        return; // صافي سالينا مع هاد الكليان
+    }
+}
+// void    Server::handleClientEvent(int client_fd){
+//     Client& client = clients[client_fd];
+//     try {
+//         client.readRequest(); // خلي الكليان يتكلف بالقراءة
+//         client.process();     // خليه يعالج الطلب ويصاوب الجواب
+//         client.sendResponse();// خليه يصيفط الجواب
+//     } catch (const std::exception& e) {
+//         std::cerr << "Error handling client " << client_fd << ": " << e.what() << std::endl;
+//         removeClient(client_fd); // إلى وقع شي خطأ، كنمسحوه
+//         return;
+//     }
+//     if (client.isDone()) {
+//         // removeClient(client_fd);
+//     }
+
+// }
 
 void    Server::eventLoop(){
     struct epoll_event events_received[MAX_EVENTS];
@@ -132,7 +190,7 @@ void    Server::eventLoop(){
             if (it != listening_fds.end()) {
                 handleNewConnection(active_fd);
             } else {
-                handleClientEvent(active_fd);
+                handleClientEvent(active_fd, events_received[i].events);
             }
         }
     }

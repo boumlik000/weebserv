@@ -13,7 +13,7 @@ static std::string SSTR(T o) {
 void Client::readRequest() {
     const int BUFFER_SIZE = 4096; // 4KB
     char buffer[BUFFER_SIZE];
-    ssize_t bytes_read = recv(_fd, buffer, BUFFER_SIZE, 0);
+    ssize_t bytes_read = recv(_fd, buffer, BUFFER_SIZE, MSG_DONTWAIT);
     std::cout<<"request : "<<buffer<<std::endl;
     if (bytes_read > 0) {
         _requestBuffer.append(buffer, bytes_read);
@@ -37,12 +37,25 @@ void Client::sendResponse() {
         return; // مكنديرو والو إلى مكناش فالحالة ديال الإرسال
     }
     std::string response_str = _httpResponse.buildResponseString();
-    std::cout<<"response : "<<response_str<<std::endl;
+    // std::string response_str = 
+    //             "HTTP/1.1 200 OK\r\n"
+    //             "Content-Type: text/html\r\n"
+    //             "Content-Length: 139\r\n"
+    //             "Connection: close\r\n"
+    //             "\r\n"
+    //             "<html><head><title>Test Server</title></head>"
+    //             "<body><h1>Multiplexing Test Server</h1>"
+    //             "<p>Server is working! Request received and processed.</p></body></html>";
     ssize_t bytes_sent = send(_fd, response_str.c_str() + _bytesSent, response_str.length() - _bytesSent, 0);
     if (bytes_sent > 0) {
+        std::cout<<"response : "<<response_str<<std::endl;
         _bytesSent += bytes_sent; // كنزيدو داكشي لي تصيفط على المجموع
     } else if (bytes_sent < 0) {
+        std::cerr << "Send failed on fd " << _fd 
+              << ". Reason: " << strerror(errno) // كيعطيك رسالة الخطأ
+              << " (errno: " << errno << ")" << std::endl;
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            std::cout<<"kharya taria "<<std::endl;
             _state = DONE; // خطأ حقيقي، كنقطعو الاتصال
         }
         // إلى كان EAGAIN، يعني buffer ديال الشبكة عامر، غنعاودو نصيفطو من بعد
@@ -223,7 +236,7 @@ void Client::process() {
     const LocationConfig& location = _config.findLocationFor(_httpRequest.getUri());
     // 4. التحقق من صحة الطلب بناءً على القواعد
     if (!location.isMethodAllowed(_httpRequest.getMethod())) {
-        _buildErrorResponse(404); // 405 Method Not Allowed
+        _buildErrorResponse(405); // 405 Method Not Allowed
         return;
     }
     // 5. تنفيذ الإجراء على حسب الـ Method
