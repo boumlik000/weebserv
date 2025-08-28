@@ -1,5 +1,6 @@
 #include "server.hpp"     // Includes everything needed via server.hpp -> ConfigFile.hpp etc.
 #include "ConfigFile.hpp" // Make sure to include this for the Webserv class
+#include "client.hpp" // Make sure to include this for the Webserv class
 // #include "webserv.hpp" // Make sure to include this for the Webserv class
 
 int main(int ac, char **av)
@@ -20,7 +21,9 @@ int main(int ac, char **av)
         // 3. Parse the configuration file.
         // The pars_cfile method will handle errors and print messages.
         webserv.start_event(ac, av);
-
+        std::cout << "\n--- FINAL CONFIG STATE IN MAIN ---\n";
+        webserv.getConfig().printParsedConfig();
+        std::cout << "----------------------------------\n\n";
         // 4. Create and run the server using the parsed configuration.
         // We get the configuration from the Webserv object and pass it to the Server.
         Server my_server(webserv.getConfig()); // You'll need to add a simple getter in your Webserv class for this.

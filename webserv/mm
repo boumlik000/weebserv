@@ -1,0 +1,389 @@
+#include "parsing.hpp"
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <ctime>
+
+// Simple Client implementation for testing multiplexing
+class Client {
+public:
+    Client() : _fd(-1), _state(AWAITING_REQUEST), _bytesSent(0), _lastActivity(time(NULL)) {}
+    
+    Client(int client_fd) : _fd(client_fd), _state(AWAITING_REQUEST), _bytesSent(0), _lastActivity(time(NULL)) {
+        // Make socket non-blocking
+        int flags = fcntl(_fd, F_GETFL, 0);
+        fcntl(_fd, F_SETFL, flags | O_NONBLOCK);
+    }
+    
+    Client(const Client& src) {
+        *this = src;
+    }
+    
+    Client& operator=(const Client& rhs) {
+        if (this != &rhs) {
+            _fd = rhs._fd;
+            _state = rhs._state;
+            _requestBuffer = rhs._requestBuffer;
+            _responseBuffer = rhs._responseBuffer;
+            _bytesSent = rhs._bytesSent;
+            _lastActivity = rhs._lastActivity;
+        }
+        return *this;
+    }
+    
+    ~Client() {}
+
+    void readRequest() {
+        char buffer[4096];
+        ssize_t bytesRead = recv(_fd, buffer, sizeof(buffer) - 1, 0);
+        
+        if (bytesRead > 0) {
+            buffer[bytesRead] = '\0';
+            _requestBuffer += buffer;
+            _lastActivity = time(NULL);
+            
+            // Simple check for complete HTTP request (ends with \r\n\r\n)
+            if (_requestBuffer.find("\r\n\r\n") != std::string::npos) {
+                _state = REQUEST_RECEIVED;
+            }
+        } else if (bytesRead == 0) {
+            // Client closed connection
+            _state = DONE;
+        } else if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            // Real error occurred
+            _state = DONE;
+        }
+    }
+
+    void process() {
+        if (_state == REQUEST_RECEIVED) {
+            // Generate a simple default response for testing
+            std::string response = 
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: 139\r\n"
+                "Connection: close\r\n"
+                "\r\n"
+                "<html><head><title>Test Server</title></head>"
+                "<body><h1>Multiplexing Test Server</h1>"
+                "<p>Server is working! Request received and processed.</p></body></html>";
+            
+            _responseBuffer = response;
+            _state = SENDING_RESPONSE;
+        }
+    }
+
+    void sendResponse() {
+        if (_state == SENDING_RESPONSE && !_responseBuffer.empty()) {
+            size_t remaining = _responseBuffer.length() - _bytesSent;
+            ssize_t bytesSent = send(_fd, _responseBuffer.c_str() + _bytesSent, remaining, 0);
+            
+            if (bytesSent > 0) {
+                _bytesSent += bytesSent;
+                _lastActivity = time(NULL);
+                
+                if (_bytesSent >= _responseBuffer.length()) {
+                    _state = DONE;
+                }
+            } else if (bytesSent == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+                // Real error occurred
+                _state = DONE;
+            }
+        }
+    }
+
+    int getFd() const { return _fd; }
+    ClientState getState() const { return _state; }
+    bool isDone() const { return _state == DONE; }
+    bool isTimedOut(int timeout_seconds = 30) const {
+        return (time(NULL) - _lastActivity) > timeout_seconds;
+    }
+
+private:
+    int _fd;
+    ClientState _state;
+    std::string _requestBuffer;
+    std::string _responseBuffer;
+    size_t _bytesSent;
+    time_t _lastActivity;
+};
+
+class MultiplexingServer {
+private:
+    ConfigFile& _config;
+    std::vector<int> _serverSockets;
+    int _epollFd;
+    std::map<int, Client*> _clients;
+
+public:
+    MultiplexingServer(ConfigFile& config) : _config(config), _epollFd(-1) {}
+    
+    ~MultiplexingServer() {
+        cleanup();
+    }
+
+    bool initialize() {
+        // Create epoll instance
+        _epollFd = epoll_create1(EPOLL_CLOEXEC);
+        if (_epollFd == -1) {
+            std::cerr << "Failed to create epoll: " << strerror(errno) << std::endl;
+            return false;
+        }
+
+        // Create server sockets for each listen configuration
+        const std::vector<ListenInfo>& listens = _config.getListenInfos();
+        for (size_t i = 0; i < listens.size(); i++) {
+            int serverSocket = createServerSocket(listens[i]);
+            if (serverSocket == -1) {
+                std::cerr << "Failed to create server socket for " 
+                          << listens[i].ip << ":" << listens[i].port << std::endl;
+                return false;
+            }
+            
+            _serverSockets.push_back(serverSocket);
+            
+            // Add server socket to epoll
+            struct epoll_event ev;
+            ev.events = EPOLLIN;
+            ev.data.fd = serverSocket;
+            
+            if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, serverSocket, &ev) == -1) {
+                std::cerr << "Failed to add server socket to epoll: " << strerror(errno) << std::endl;
+                return false;
+            }
+            
+            std::cout << "Server listening on " << listens[i].ip << ":" << listens[i].port << std::endl;
+        }
+        
+        return true;
+    }
+
+    void run() {
+        const int MAX_EVENTS = 1024;
+        struct epoll_event events[MAX_EVENTS];
+        
+        std::cout << "Server started. Waiting for connections..." << std::endl;
+        
+        while (true) {
+            int nfds = epoll_wait(_epollFd, events, MAX_EVENTS, -1); // 1 second timeout
+            
+            if (nfds == -1) {
+                if (errno == EINTR) continue;
+                std::cerr << "epoll_wait failed: " << strerror(errno) << std::endl;
+                break;
+            }
+            
+            // Process events
+            for (int i = 0; i < nfds; i++) {
+                int fd = events[i].data.fd;
+                
+                if (isServerSocket(fd)) {
+                    // Accept new connection
+                    acceptNewConnection(fd);
+                } else {
+                    // Handle client event
+                    handleClientEvent(fd, events[i].events);
+                }
+            }
+            
+            // Clean up timed out clients
+            cleanupTimedOutClients();
+        }
+    }
+
+private:
+    int createServerSocket(const ListenInfo& listen) {
+        int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+        if (serverSocket == -1) {
+            std::cerr << "Failed to create socket: " << strerror(errno) << std::endl;
+            return -1;
+        }
+        
+        // Set socket options
+        int opt = 1;
+        if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+            std::cerr << "Failed to set SO_REUSEADDR: " << strerror(errno) << std::endl;
+            close(serverSocket);
+            return -1;
+        }
+        
+        // Make socket non-blocking
+        int flags = fcntl(serverSocket, F_GETFL, 0);
+        fcntl(serverSocket, F_SETFL, flags | O_NONBLOCK);
+        
+        // Bind socket
+        if (bind(serverSocket, (struct sockaddr*)&listen.addr, sizeof(listen.addr)) == -1) {
+            std::cerr << "Failed to bind socket: " << strerror(errno) << std::endl;
+            close(serverSocket);
+            return -1;
+        }
+        
+        // Start listening
+        if (::listen(serverSocket, SOMAXCONN) == -1) {
+            std::cerr << "Failed to listen: " << strerror(errno) << std::endl;
+            close(serverSocket);
+            return -1;
+        }
+        
+        return serverSocket;
+    }
+    
+    bool isServerSocket(int fd) {
+        for (size_t i = 0; i < _serverSockets.size(); i++) {
+            if (_serverSockets[i] == fd) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    void acceptNewConnection(int serverSocket) {
+        struct sockaddr_in clientAddr;
+        socklen_t clientAddrLen = sizeof(clientAddr);
+        
+        int clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientAddrLen);
+        if (clientSocket == -1) {
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                std::cerr << "Failed to accept connection: " << strerror(errno) << std::endl;
+            }
+            return;
+        }
+        
+        std::cout << "New client connected: " << inet_ntoa(clientAddr.sin_addr) 
+                  << ":" << ntohs(clientAddr.sin_port) << " (fd: " << clientSocket << ")" << std::endl;
+        
+        // Create client object
+        Client* client = new Client(clientSocket);
+        _clients[clientSocket] = client;
+        
+        // Add client socket to epoll
+        struct epoll_event ev;
+        ev.events = EPOLLIN | EPOLLOUT | EPOLLET; // Edge-triggered
+        ev.data.fd = clientSocket;
+        
+        if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientSocket, &ev) == -1) {
+            std::cerr << "Failed to add client socket to epoll: " << strerror(errno) << std::endl;
+            delete client;
+            _clients.erase(clientSocket);
+            close(clientSocket);
+        }
+    }
+    
+    void handleClientEvent(int fd, uint32_t events) {
+        std::map<int, Client*>::iterator it = _clients.find(fd);
+        if (it == _clients.end()) {
+            return;
+        }
+        
+        Client* client = it->second;
+        
+        if (events & (EPOLLHUP | EPOLLERR)) {
+            // Connection closed or error
+            std::cout << "Client disconnected (fd: " << fd << ")" << std::endl;
+            removeClient(fd);
+            return;
+        }
+        
+        if (events & EPOLLIN) {
+            // Data available for reading
+            if (client->getState() == AWAITING_REQUEST) {
+                client->readRequest();
+            }
+        }
+        
+        // Process the request if it's complete
+        if (client->getState() == REQUEST_RECEIVED) {
+            client->process();
+        }
+        
+        if (events & EPOLLOUT) {
+            // Socket ready for writing
+            if (client->getState() == SENDING_RESPONSE) {
+                client->sendResponse();
+            }
+        }
+        
+        // Clean up completed clients
+        if (client->isDone()) {
+            std::cout << "Client finished (fd: " << fd << ")" << std::endl;
+            removeClient(fd);
+        }
+    }
+    
+    void removeClient(int fd) {
+        std::map<int, Client*>::iterator it = _clients.find(fd);
+        if (it != _clients.end()) {
+            epoll_ctl(_epollFd, EPOLL_CTL_DEL, fd, NULL);
+            close(fd);
+            delete it->second;
+            _clients.erase(it);
+        }
+    }
+    
+    void cleanupTimedOutClients() {
+        std::vector<int> toRemove;
+        
+        for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+            if (it->second->isTimedOut()) {
+                toRemove.push_back(it->first);
+            }
+        }
+        
+        for (size_t i = 0; i < toRemove.size(); i++) {
+            std::cout << "Client timed out (fd: " << toRemove[i] << ")" << std::endl;
+            removeClient(toRemove[i]);
+        }
+    }
+    
+    void cleanup() {
+        // Close all client connections
+        for (std::map<int, Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+            close(it->first);
+            delete it->second;
+        }
+        _clients.clear();
+        
+        // Close server sockets
+        for (size_t i = 0; i < _serverSockets.size(); i++) {
+            close(_serverSockets[i]);
+        }
+        _serverSockets.clear();
+        
+        // Close epoll
+        if (_epollFd != -1) {
+            close(_epollFd);
+            _epollFd = -1;
+        }
+    }
+};
+
+// Implementation of the Webserv::start_event method
+int Webserv::start_event(int ac, char** av) {
+    // Parse configuration file
+    if (config.pars_cfile(ac, av) != 0) {
+        std::cerr << "Failed to parse configuration file" << std::endl;
+        return 1;
+    }
+    
+    // Print parsed configuration for debugging
+    config.printParsedConfig();
+    
+    // Create and initialize multiplexing server
+    MultiplexingServer server(config);
+    
+    if (!server.initialize()) {
+        std::cerr << "Failed to initialize server" << std::endl;
+        return 1;
+    }
+    
+    // Start the event loop
+    server.run();
+    
+    return 0;
+}
+
+int main(int ac, char** av) {
+    Webserv server;
+    return server.start_event(ac, av);
+}

@@ -248,9 +248,13 @@ bool ConfigFile::parseLocation(const std::string& line) {
     LocationConfig config;
     config.path = parts[0];
 
+    std::string normalized_path = normalizePath(config.path);
     for (size_t i = 0; i < location_configs.size(); i++) {
-        if (location_configs[i].path == config.path) {
-            std::cerr << "Error: Duplicate location path: " << config.path << std::endl;
+        if (normalizePath(location_configs[i].path) == normalized_path) {
+            std::cerr << "Error: Duplicate location path: " << config.path 
+                      << " (normalized: " << normalized_path 
+                      << ") conflicts with existing path: " << location_configs[i].path 
+                      << " (normalized: " << normalizePath(location_configs[i].path) << ")" << std::endl;
             return false;
         }
     }

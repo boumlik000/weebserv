@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+// #include "server.hpp"
 
 // Forward declarations
 class ConfigFile;
@@ -40,19 +41,25 @@ struct LocationConfig {
     std::string redirect_code;
     std::string redirect_path;
     bool has_redirect;
-    bool isMethodAllowed(const std::string &method) const
-    {
-        std::cerr<<"hanta asahbi : "<<allowed_methods.size()<<std::endl;
-        for(int i = 0; i < allowed_methods.size(); i++)
-        {
-            std::cerr<<allowed_methods[i]<<std::endl;
+    // bool isMethodAllowed(const std::string &method) const
+    // {
+    //     std::cerr<<"hanta asahbi : "<<allowed_methods.size()<<std::endl;
+    //     for(int i = 0; i < allowed_methods.size(); i++)
+    //     {
+    //         std::cerr<<allowed_methods[i]<<std::endl;
+    //         if(allowed_methods[i] == method)
+    //             return true;
+    //     }
+    //     std::cerr<<"FOR FIND "<<method<<std::endl;
+    //     return false;
+    // }
+    bool isMethodAllowed(const std::string &method) const {
+        for(size_t i = 0; i < allowed_methods.size(); i++) {  // Use size_t instead of int
             if(allowed_methods[i] == method)
                 return true;
         }
-        std::cerr<<"FOR FIND "<<method<<std::endl;
         return false;
     }
-
     // Constructor to set default values
     LocationConfig() : index("index."), autoindex("off"), upload("pages/upload") , has_redirect(false) {}
 };

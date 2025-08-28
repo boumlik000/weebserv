@@ -78,7 +78,7 @@ class ConfigFile
         bool containsOnlyPrintableChars(const std::string& str);
         bool isValidHostname(const std::string& hostname);
         bool isListenDuplicate(const std::string& ip, int port);
-
+        std::string normalizePath(const std::string& path);
         // New function to print the configuration
         void printParsedConfig() const;
 

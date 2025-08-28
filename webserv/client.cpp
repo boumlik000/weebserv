@@ -1,5 +1,6 @@
 // داخل Client.cpp
 #include "client.hpp"
+#include "server.hpp"
 #include <unistd.h> // For read() or recv()
 #include <errno.h>  // For error numbers like EAGAIN
 
@@ -32,34 +33,49 @@ void Client::readRequest() {
         // إلى كان الخطأ EAGAIN، مكنديرو والو، كنتسناو epoll تعلمنا مرة أخرى
     }
 }
+
+ void modifyEpollEvent(int fd, uint32_t new_events, int epoll_fd)
+    {
+    struct epoll_event event;
+    event.data.fd = fd;
+    event.events = new_events;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event) == -1) {
+        perror("epoll_ctl: mod");
+    }
+}
+
 void Client::sendResponse() {
     if (_state != SENDING_RESPONSE) {
-        return; // مكنديرو والو إلى مكناش فالحالة ديال الإرسال
+        return;
     }
+    
+    // Use the HttpResponse object that was built in process()
     std::string response_str = _httpResponse.buildResponseString();
-    std::cout<<"response : "<<response_str<<std::endl;
-    ssize_t bytes_sent = send(_fd, response_str.c_str() + _bytesSent, response_str.length() - _bytesSent, 0);
+    
+    ssize_t bytes_sent = send(_fd, response_str.c_str() + _bytesSent, 
+                             response_str.length() - _bytesSent, 0);
+    
     if (bytes_sent > 0) {
-        _bytesSent += bytes_sent; // كنزيدو داكشي لي تصيفط على المجموع
+        std::cout << "response: " << response_str << std::endl;
+        _bytesSent += bytes_sent;
     } else if (bytes_sent < 0) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            _state = DONE; // خطأ حقيقي، كنقطعو الاتصال
+            std::cerr << "Send error: " << strerror(errno) << std::endl;
         }
-        // إلى كان EAGAIN، يعني buffer ديال الشبكة عامر، غنعاودو نصيفطو من بعد
     }
-    // كنتأكدو واش سالينا الإرسال
+    
     if (_bytesSent >= response_str.length()) {
-        _state = DONE; // صيفطنا كلشي، إذن سالينا
+        _state = DONE;
     }
 }
 // --- 1. Default Constructor ---
 // كنحتاجوه باش نقدر نديرو std::map<int, Client>
-Client::Client() : _fd(-1), _state(AWAITING_REQUEST), _config(g_default_config) {
+Client::Client() : _fd(-1), _state(AWAITING_REQUEST), _config(g_default_config) ,_bytesSent(0) {
     // كنعطيو للـ fd قيمة غالطة (-1) باش نعرفو أنه مزال ما تخدم
 }
 
 // --- Constructor لي كنخدمو بيه بصح ---
-Client::Client(int client_fd, const ConfigFile& conf) : _fd(client_fd), _config(conf),_state(AWAITING_REQUEST) {
+Client::Client(int client_fd, const ConfigFile& conf) : _fd(client_fd), _config(conf),_state(AWAITING_REQUEST),_bytesSent(0) {
     std::cout << "HMMMMMMMMMMMMMMMm" << std::endl;
     _config.findLocationFor("/");
     // فاش كنصاوبو client جديد، كنعطيوه الـ fd ديالو مباشرة

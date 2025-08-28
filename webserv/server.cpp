@@ -83,42 +83,87 @@ void    Server::removeClient(int client_fd){
     close(client_fd);
     clients.erase(client_fd);
 }
+// //boumlik
+// void Server::modifyEpollEvent(int fd, uint32_t new_events) {
+//     struct epoll_event event;
+//     event.data.fd = fd;
+//     event.events = new_events;
+//     if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event) == -1) {
+//         perror("epoll_ctl: mod");
+//     }
+// }
+
 void    Server::handleNewConnection(int listener_fd){
         struct sockaddr_in client_addr;
         socklen_t client_len = sizeof(client_addr);
         int client_fd = accept4(listener_fd, (struct sockaddr *)&client_addr, &client_len, SOCK_NONBLOCK);
         if (client_fd == -1) {
-            perror("accept");
+           if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                std::cerr << "Failed to accept connection: " << strerror(errno) << std::endl;
+            }
             return;
         }
         // fcntl(client_fd, F_SETFL, O_NONBLOCK);
         struct epoll_event event;
-        event.events = EPOLLIN;
+        event.events = EPOLLIN | EPOLLOUT | EPOLLET;;
         event.data.fd = client_fd;
         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1) {
             perror("epoll_ctl: add client_fd");
             close(client_fd);
             return;
         }
-        clients[client_fd] = Client(client_fd, config);
+        // clients[client_fd] = Client(client_fd, config);
+        clients.insert(std::make_pair(client_fd, Client(client_fd, config)));
+
+        
         std::cout << "New connection established with fd: " << client_fd << std::endl;
 }
-void    Server::handleClientEvent(int client_fd){
+// ف server.cpp
+// void    Server::handleClientEvent(int client_fd){
+//     Client& client = clients[client_fd];
+//     try {
+        
+//         client.readRequest(); // خلي الكليان يتكلف بالقراءة
+//         client.process();     // خليه يعالج الطلب ويصاوب الجواب
+//         client.sendResponse();// خليه يصيفط الجواب
+//     } catch (const std::exception& e) {
+//         std::cerr << "Error handling client " << client_fd << ": " << e.what() << std::endl;
+//         removeClient(client_fd); // إلى وقع شي خطأ، كنمسحوه
+//         return;
+//     }
+//     if (client.isDone()) {
+//         removeClient(client_fd);
+//     }
+
+// }
+void Server::handleClientEvent(int client_fd, uint32_t events) {
     Client& client = clients[client_fd];
-    try {
-        client.readRequest(); // خلي الكليان يتكلف بالقراءة
-        client.process();     // خليه يعالج الطلب ويصاوب الجواب
-        client.sendResponse();// خليه يصيفط الجواب
-    } catch (const std::exception& e) {
-        std::cerr << "Error handling client " << client_fd << ": " << e.what() << std::endl;
-        removeClient(client_fd); // إلى وقع شي خطأ، كنمسحوه
-        return;
+    if (events & (EPOLLHUP | EPOLLERR)) {
+            // Connection closed or error
+            std::cout << "Client disconnected (fd: " << client_fd << ")" << std::endl;
+            removeClient(client_fd);
+            return;
+    }
+    if (events & EPOLLIN) {
+        if (client.getState() == AWAITING_REQUEST) {
+            client.readRequest();
+        }
+        if (client.getState() == REQUEST_RECEIVED) {
+            client.process();
+            // دابا الجواب واجد ف _fullResponse و الحالة هي SENDING_RESPONSE
+        }
+    }
+    if (events & EPOLLOUT) {
+        if (client.getState() == SENDING_RESPONSE) {
+            client.sendResponse();
+        }
     }
     if (client.isDone()) {
-        // removeClient(client_fd);
+        removeClient(client_fd);
+        return; // صافي سالينا مع هاد الكليان
     }
-
 }
+
 
 void    Server::eventLoop(){
     struct epoll_event events_received[MAX_EVENTS];
@@ -132,7 +177,7 @@ void    Server::eventLoop(){
             if (it != listening_fds.end()) {
                 handleNewConnection(active_fd);
             } else {
-                handleClientEvent(active_fd);
+                handleClientEvent(active_fd, events_received[i].events);
             }
         }
     }

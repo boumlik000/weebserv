@@ -3,7 +3,6 @@
 ConfigFile::ConfigFile() : max_size(1024), client_max_body_size_set(false) {}
 ConfigFile::~ConfigFile() {}
 
-
 std::string ConfigFile::trim(const std::string& str) {
     size_t first = str.find_first_not_of(" \t\n\r");
     if (first == std::string::npos)
@@ -23,67 +22,6 @@ std::vector<std::string> ConfigFile::split(const std::string& str, char delimite
     return tokens;
 }
 
-
-std::string ConfigFile::normalizePath(const std::string& path) {
-    if (path.empty()) {
-        return "/";
-    }
-    
-    std::string normalized = path;
-    
-    // Ensure it starts with /
-    if (normalized[0] != '/') {
-        normalized = "/" + normalized;
-    }
-    
-    // Handle multiple consecutive slashes first
-    std::string temp;
-    bool lastWasSlash = false;
-    for (size_t i = 0; i < normalized.length(); i++) {
-        if (normalized[i] == '/') {
-            if (!lastWasSlash) {
-                temp += '/';
-                lastWasSlash = true;
-            }
-        } else {
-            temp += normalized[i];
-            lastWasSlash = false;
-        }
-    }
-    normalized = temp;
-    
-    // Split path into components and resolve . and .. references
-    std::vector<std::string> components;
-    std::stringstream ss(normalized);
-    std::string component;
-    
-    while (std::getline(ss, component, '/')) {
-        if (component.empty() || component == ".") {
-            // Skip empty components and current directory references
-            continue;
-        } else if (component == "..") {
-            // Parent directory - remove last component if possible
-            if (!components.empty()) {
-                components.pop_back();
-            }
-        } else {
-            // Normal component
-            components.push_back(component);
-        }
-    }
-    
-    // Rebuild the path
-    std::string result = "/";
-    for (size_t i = 0; i < components.size(); i++) {
-        if (i > 0) {
-            result += "/";
-        }
-        result += components[i];
-    }
-    
-    return result;
-}
-
 void ConfigFile::printParsedConfig() const {
     std::cout << "--- Parsed Configuration ---" << std::endl;
     std::cout << "Listen Addresses:" << std::endl;
@@ -92,7 +30,7 @@ void ConfigFile::printParsedConfig() const {
     }
     std::cout << "\nError Pages:" << std::endl;
     for (std::map<int, std::string>::const_iterator it = error_pages.begin(); it != error_pages.end(); ++it) {
-        std::cout << "  - Code " << it->first << ": " << it->second << std::endl;
+        std::cout << "  - Code " << it->first << ": " << it->second << " message: " << getErrorPageMessage(it->first) << std::endl;
     }
     std::cout << "\nClient Max Body Size: " << max_size << std::endl;
     std::cout << "\nLocations:" << std::endl;
@@ -137,7 +75,41 @@ void ConfigFile::printParsedConfig() const {
     std::cout << "--------------------------" << std::endl;
 }
 
+std::string ConfigFile::getErrorPage(int status_code) const {
+    std::map<int, std::string>::const_iterator it = error_pages.find(status_code);
+    if (it != error_pages.end()) {
+        return it->second;
+    }
+    // Return empty string if status code not found
+    return "";
+}
 
+std::string ConfigFile::getErrorPageMessage(int status_code) const {
+    switch (status_code) {
+        case 400:
+            return "Bad Request";
+        case 401:
+            return "Unauthorized";
+        case 403:
+            return "Forbidden";
+        case 404:
+            return "Not Found";
+        case 408:
+            return "Request Timeout";
+        case 500:
+            return "Internal Server Error";
+        case 501:
+            return "Not Implemented";
+        case 502:
+            return "Bad Gateway";
+        case 503:
+            return "Service Unavailable";
+        case 504:
+            return "Gateway Timeout";
+        default:
+            return "Unknown Error";
+    }
+}
 const std::vector<struct ListenInfo>& ConfigFile::getListenInfos() const { return listen_infos; }
 const std::map<int, std::string>& ConfigFile::getErrorPages() const { return error_pages; }
 unsigned int ConfigFile::getMaxSize() const { return max_size; }
@@ -154,26 +126,38 @@ void ConfigFile::addListenInfo(const std::string& ip, int port) {
     inet_pton(AF_INET, ip.c_str(), &info.addr.sin_addr);
     listen_infos.push_back(info);
 }
+bool ConfigFile::parseConfigFile(const std::string& filename) {
+    // Simple implementation for testing
+    ListenInfo listen;
+    listen.ip = "127.0.0.1";
+    listen.port = 8080;
+    listen.addr.sin_family = AF_INET;
+    listen.addr.sin_port = htons(8080);
+    listen.addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    
+    listen_infos.push_back(listen);
+    return true;
+}
 
 void ConfigFile::addLocationConfig(const LocationConfig& config) { location_configs.push_back(config); }
 
-int Webserv::pars_cfile(int ac, char** av) {
+int ConfigFile::pars_cfile(int ac, char** av) {
    if (ac != 2) {
         std::cerr << "Usage: " << av[0] << " <config_file>" << std::endl;
         return 1;
     }
     std::string config_file = av[1];
-    if (!config.parseConfigFile(config_file)) {
+    if (!parseConfigFile(config_file)) {
         std::cerr << "Failed to parse configuration file: " << config_file << std::endl;
         return 1;
     }
     std::cout << "Configuration parsed successfully!" << std::endl;
-    config.printParsedConfig();
+    printParsedConfig();
     return 0;
 }
 
-int Webserv::start_event(int ac, char** av) {
-    pars_cfile(ac,av);
+// int Webserv::start_event(int ac, char** av) {
+//     config.pars_cfile(ac,av);
     
-    return 0;
-}
+//     return 0;
+// }

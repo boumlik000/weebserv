@@ -40,7 +40,7 @@ public:
     int getFd() const;
     ClientState getState() const;
     bool isDone() const;
-
+    const ConfigFile& getConfig() const { return _config; }
 private:
     int                 _fd;
     const ConfigFile&        _config;              // السوكيت ديال هاد الكليان (رقم الغرفة)
