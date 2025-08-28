@@ -82,6 +82,7 @@ void    Server::removeClient(int client_fd){
     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
     close(client_fd);
     clients.erase(client_fd);
+    notifEvent.erase(client_fd);
 }
 void    Server::handleNewConnection(int listener_fd){
     struct sockaddr_in client_addr;
@@ -128,38 +129,47 @@ void    Server::handleNewConnection(int listener_fd){
 //         clients[client_fd] = Client(client_fd, config);
 //         std::cout << "New connection established with fd: " << client_fd << std::endl;
 // }
-void Server::handleClientEvent(int client_fd, uint32_t events) {
-    std::map<int, Client>::iterator it = clients.find(client_fd);
-        if (it == clients.end()) {
-            return;
+void Server::handleClientEvent() {
+    // FIX: Collect clients to remove instead of removing during iteration
+        std::vector<int> clients_to_remove;
+        
+        std::map<int, Client>::iterator it;
+        for (it = clients.begin(); it != clients.end(); ++it) {
+            int client_fd = it->first;
+            Client* client = &it->second;
+            
+            uint32_t events = notifEvent[client_fd];
+            
+            if (events & (EPOLLHUP | EPOLLERR)) {
+                std::cout << "Client disconnected (fd: " << client_fd << ")" << std::endl;
+                clients_to_remove.push_back(client_fd);
+                continue;
+            }
+            
+            if (events & EPOLLIN) {
+                if (client->getState() == AWAITING_REQUEST) {
+                    client->readRequest();
+                }
+                if (client->getState() == REQUEST_RECEIVED) {
+                    client->process();
+                }
+            }
+            
+            if (events & EPOLLOUT) {
+                if (client->getState() == SENDING_RESPONSE) {
+                    client->sendResponse();
+                }
+            }
+            
+            if (client->isDone()) {
+                clients_to_remove.push_back(client_fd);
+            }
         }
         
-        Client* client = &it->second;
-        
-    if (events & (EPOLLHUP | EPOLLERR)) {
-            // Connection closed or error
-            std::cout << "Client disconnected (fd: " << client_fd << ")" << std::endl;
-            removeClient(client_fd);
-            return;
-    }
-    if (events & EPOLLIN) {
-        if (client->getState() == AWAITING_REQUEST) {
-            client->readRequest();
+        // Now safely remove all clients that need to be removed
+        for (size_t i = 0; i < clients_to_remove.size(); ++i) {
+            removeClient(clients_to_remove[i]);
         }
-        if (client->getState() == REQUEST_RECEIVED) {
-            client->process();
-            // دابا الجواب واجد ف _fullResponse و الحالة هي SENDING_RESPONSE
-        }
-    }
-    if (events & EPOLLOUT) {
-        if (client->getState() == SENDING_RESPONSE) {
-            client->sendResponse();
-        }
-    }
-    if (client->isDone()) {
-        // removeClient(client_fd);
-        return; // صافي سالينا مع هاد الكليان
-    }
 }
 // void    Server::handleClientEvent(int client_fd){
 //     Client& client = clients[client_fd];
@@ -182,7 +192,7 @@ void    Server::eventLoop(){
     struct epoll_event events_received[MAX_EVENTS];
     while (true)
     {
-        int num_events = epoll_wait(epoll_fd, events_received, MAX_EVENTS, -1);
+        int num_events = epoll_wait(epoll_fd, events_received, MAX_EVENTS, 0);
         for(int i = 0; i < num_events; i++)
         {
             int active_fd = events_received[i].data.fd;
@@ -190,9 +200,11 @@ void    Server::eventLoop(){
             if (it != listening_fds.end()) {
                 handleNewConnection(active_fd);
             } else {
-                handleClientEvent(active_fd, events_received[i].events);
+                notifEvent[active_fd] = events_received[i].events;
             }
         }
+        handleClientEvent();
+        
     }
     
 }

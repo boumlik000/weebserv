@@ -8,7 +8,7 @@ CXX = c++
 
 # الفلاغز ديال الكومپيلاسيون: كنزيدو ليهم -MMD و -MP باش نصنعو ملفات التبعية (dependencies)
 # -I. كتقول للكومبايلر يقلب على الهيدرز (.hpp) حتى فالدوسي الحالي
-CXXFLAGS = -std=c++98 -I. -MMD -MP
+CXXFLAGS = -std=c++98 -fsanitize=address -g3 -I. -MMD -MP
 
 # الكوموند باش نمسحو الملفات
 RM = rm -f

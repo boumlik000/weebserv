@@ -13,12 +13,18 @@ static std::string SSTR(T o) {
 void Client::readRequest() {
     const int BUFFER_SIZE = 4096; // 4KB
     char buffer[BUFFER_SIZE];
-    ssize_t bytes_read = recv(_fd, buffer, BUFFER_SIZE, MSG_DONTWAIT);
+    ssize_t bytes_read = recv(_fd, buffer, BUFFER_SIZE - 1, MSG_DONTWAIT);
     std::cout<<"request : "<<buffer<<std::endl;
     if (bytes_read > 0) {
+        buffer[bytes_read] = 0;
+        std::string tmp = buffer; 
+        size_t len = tmp.find("\r\n\r\n");
+        if(len != std::string::npos && _requestBuffer.size() + len + 4 >= MAX_REQUEST) //max of  request  hna khas truturni  bad request
+         {
+            _buildErrorResponse(400);
+            return;
+         }
         _requestBuffer.append(buffer, bytes_read);
-        // (هنا خاصك دير لوجيك باش تعرف واش الطلب كمل)
-        // أبسط طريقة هي تقلب على النهاية ديال الـ headers
         if (_requestBuffer.find("\r\n\r\n") != std::string::npos) {
             _state = REQUEST_RECEIVED;
         }
@@ -31,6 +37,8 @@ void Client::readRequest() {
         }
         // إلى كان الخطأ EAGAIN، مكنديرو والو، كنتسناو epoll تعلمنا مرة أخرى
     }
+    std::cout<<"wa lakhaaaaaaaaaaaaaaaaaaaaaaaaaaaaaarrrrrrr : "<<std::endl;
+    
 }
 void Client::sendResponse() {
     if (_state != SENDING_RESPONSE) {
@@ -117,6 +125,7 @@ ClientState Client::getState() const {
 }
 
 bool Client::isDone() const {
+    // return false;
     return this->_state == DONE;
 }
 
@@ -222,6 +231,7 @@ void Client::_handleGet(const LocationConfig& location) {
 void Client::process() {
     // 1. كنتأكدو أننا فالحالة الصحيحة باش نبدأو المعالجة
     if (_state != REQUEST_RECEIVED) {
+        std::cout<<"3iw"<<std::endl;
         return; // إلى مكناش فهاد الحالة، معندنا ما نديرو هنا
     }
     // 2. تحليل (Parsing) الطلب الخام

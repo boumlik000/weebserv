@@ -68,11 +68,12 @@ bool HttpRequest::parse(const std::string& raw_request) {
         }
         _parseHeader(line);
     }
-    
     // 3. كلشي لي بقا من بعد السطر الخاوي هو الـ Body
     std::string body_str;
     std::getline(request_stream, body_str, '\0'); // قرا كلشي لي بقا
     this->_body.assign(body_str.begin(), body_str.end());
+
+    
 
     return true;
 }
@@ -115,6 +116,7 @@ void HttpRequest::_parseRequestLine(const std::string& line) {
     line_stream >> this->_method;
     line_stream >> this->_uri;
     line_stream >> this->_http_version;
+
 }
 
 void HttpRequest::_parseHeader(const std::string& line) {

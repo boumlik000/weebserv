@@ -26,10 +26,11 @@ private:
     int                 epoll_fd;
     std::vector<int>    listening_fds;
     std::map<int, Client> clients;
+    std::map<int, uint32_t> notifEvent;
 
     void setupServer();
     void eventLoop();
     void handleNewConnection(int listener_fd);
-    void handleClientEvent(int client_fd, uint32_t events);
+    void handleClientEvent();
     void removeClient(int client_fd);
 };

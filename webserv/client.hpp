@@ -8,6 +8,8 @@
 #include <fstream> // باش نقراو الملفات
 #include <sstream> // باش نحولو الأرقام لـ string
 // enum باش نتبعو الحالة ديال الكليان
+#define MAX_REQUEST 8192
+
 enum ClientState {
     AWAITING_REQUEST,   // كنتسناو الطلب يوصل
     REQUEST_RECEIVED,   // الطلب وصل كاملًا، خاصو يتعالج
