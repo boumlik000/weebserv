@@ -7,6 +7,9 @@
 #include "HttpResponse.hpp" // كلاس خاصة ببناء الجواب
 #include <fstream> // باش نقراو الملفات
 #include <sstream> // باش نحولو الأرقام لـ string
+#include <sys/stat.h>
+#include <climits>
+
 // enum باش نتبعو الحالة ديال الكليان
 #define MAX_REQUEST 8192
 

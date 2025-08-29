@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <climits>
 
 // Forward declarations
 class ConfigFile;
@@ -110,14 +111,35 @@ class ConfigFile
         void addListenInfo(const std::string& ip, int port);
         void addLocationConfig(const LocationConfig& config);
 
-        int maxMatch(const std::string &s1, const std::string &s2) const
-        {
-            int count = -1;
-            while(++count && s1[count] && s2[count] && s1[count] == s2[count]);
-            return count;
+
+int maxMatch(const std::string &s1, const std::string &s2) const {
+    if (s1.empty() || s2.empty()) {
+        return 0;
+    }
+
+    size_t i = 0;
+    int lastSlashPos = 0;
+
+    // Find common prefix
+    while (i < s1.length() && i < s2.length() && s1[i] == s2[i]) {
+        if (s1[i] == '/') {
+            lastSlashPos = i + 1; // Position after the slash
         }
+        i++;
+    }
+
+    // If we matched the entire s1 and it ends with '/' or s2 has '/' next
+    if (i == s1.length()) {
+        // C++98 equivalent of s1.back() is s1[s1.length() - 1]
+        if (s1[s1.length() - 1] == '/' || i == s2.length() || s2[i] == '/') {
+            return s1.length();
+        }
+    }
+
+    return lastSlashPos;
+}
         LocationConfig findLocationFor(const std::string &uri) const {
-            int max = 0;
+            int max = INT_MIN;
             LocationConfig chosen;
             std::cerr<<"azabi ha ch7al fih "<<uri<<std::endl;
             for(int i = 0; i < location_configs.size(); i++)
@@ -126,7 +148,7 @@ class ConfigFile
                 if(location_configs[i].path == uri)
                     return location_configs[i];
                 int match = maxMatch(location_configs[i].path, uri);
-                std::cerr<<"azabi ha ch7al fih "<<match<<std::endl;
+                std::cerr<<"azabi ha ch7al fih "<<match<<"  path : "<<location_configs[i].path<<std::endl;
                 if(match > max)
                 {
                     chosen = location_configs[i];

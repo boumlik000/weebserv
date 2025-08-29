@@ -208,10 +208,34 @@ void Client::_handlePost(const LocationConfig& location) {
 
 
 void Client::_handleGet(const LocationConfig& location) {
-    std::string path = location.root + _httpRequest.getUri();
+    std::string restPath = _httpRequest.getUri().substr(location.path.size(), _httpRequest.getUri().size());
+    std::string path = location.root + "/" + restPath;
+
+    // const char* path = "your_path_here";
+
+    struct stat info;
+
+    if (stat(path.c_str(), &info) < 0) {
+        std::cerr << "Cannot access " << path << std::endl;
+        // _buildErrorResponse(403); // 404 Not Found
+        // return;
+    }
+
+    if (S_ISDIR(info.st_mode)) {
+        std::cout << path << " is a directory\n";
+        path += "/" + location.index;
+    } else if (S_ISREG(info.st_mode)) {
+        std::cout << path << " is a regular file\n";
+    } else {
+        std::cout << path << " is neither a regular file nor a directory\n";
+    }
+    std::cout <<  "root ======  " << location.root << "  ||||||||||||  " <<  _httpRequest.getUri() << std::endl ;
     std::ifstream file(path.c_str());
     if (!file.is_open()) {
-        _buildErrorResponse(404); // 404 Not Found
+         if (access(path.c_str(), F_OK) != 0)
+            _buildErrorResponse(404); // 404 Not Found
+         else if (access(path.c_str(), R_OK) != 0)
+            _buildErrorResponse(403); // 404 Not Found
         return;
     }
     // كنقراو المحتوى ديال الملف كامل
