@@ -1,6 +1,118 @@
 #include "ConfigFile.hpp"
 
-ConfigFile::ConfigFile() : max_size(1024), client_max_body_size_set(false) {}
+ConfigFile::ConfigFile() : max_size(1024), client_max_body_size_set(false) {
+    _mime_type["html"]  = "text/html";
+    _mime_type["htm"]   = "text/html";
+    _mime_type["shtml"] = "text/html";
+    _mime_type["css"]   = "text/css";
+    _mime_type["xml"]   = "text/xml";
+    _mime_type["gif"]   = "image/gif";
+    _mime_type["jpeg"]  = "image/jpeg";
+    _mime_type["jpg"]   = "image/jpeg";
+    _mime_type["js"]    = "application/javascript";
+    _mime_type["atom"]  = "application/atom+xml";
+    _mime_type["rss"]   = "application/rss+xml";
+    _mime_type["mml"]   = "text/mathml";
+    _mime_type["txt"]   = "text/plain";
+    _mime_type["jad"]   = "text/vnd.sun.j2me.app-descriptor";
+    _mime_type["wml"]   = "text/vnd.wap.wml";
+    _mime_type["htc"]   = "text/x-component";
+    _mime_type["avif"]  = "image/avif";
+    _mime_type["png"]   = "image/png";
+    _mime_type["svg"]   = "image/svg+xml";
+    _mime_type["svgz"]  = "image/svg+xml";
+    _mime_type["tif"]   = "image/tiff";
+    _mime_type["tiff"]  = "image/tiff";
+    _mime_type["wbmp"]  = "image/vnd.wap.wbmp";
+    _mime_type["webp"]  = "image/webp";
+    _mime_type["ico"]   = "image/x-icon";
+    _mime_type["jng"]   = "image/x-jng";
+    _mime_type["bmp"]   = "image/x-ms-bmp";
+    _mime_type["woff"]  = "font/woff";
+    _mime_type["woff2"] = "font/woff2";
+    _mime_type["jar"]   = "application/java-archive";
+    _mime_type["war"]   = "application/java-archive";
+    _mime_type["ear"]   = "application/java-archive";
+    _mime_type["json"]  = "application/json";
+    _mime_type["hqx"]   = "application/mac-binhex40";
+    _mime_type["doc"]   = "application/msword";
+    _mime_type["pdf"]   = "application/pdf";
+    _mime_type["ps"]    = "application/postscript";
+    _mime_type["eps"]   = "application/postscript";
+    _mime_type["ai"]    = "application/postscript";
+    _mime_type["rtf"]   = "application/rtf";
+    _mime_type["m3u8"]  = "application/vnd.apple.mpegurl";
+    _mime_type["kml"]   = "application/vnd.google-earth.kml+xml";
+    _mime_type["kmz"]   = "application/vnd.google-earth.kmz";
+    _mime_type["xls"]   = "application/vnd.ms-excel";
+    _mime_type["eot"]   = "application/vnd.ms-fontobject";
+    _mime_type["ppt"]   = "application/vnd.ms-powerpoint";
+    _mime_type["odg"]   = "application/vnd.oasis.opendocument.graphics";
+    _mime_type["odp"]   = "application/vnd.oasis.opendocument.presentation";
+    _mime_type["ods"]   = "application/vnd.oasis.opendocument.spreadsheet";
+    _mime_type["odt"]   = "application/vnd.oasis.opendocument.text";
+    _mime_type["pptx"]  = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    _mime_type["xlsx"]  = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    _mime_type["docx"]  = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    _mime_type["wmlc"]  = "application/vnd.wap.wmlc";
+    _mime_type["wasm"]  = "application/wasm";
+    _mime_type["7z"]    = "application/x-7z-compressed";
+    _mime_type["cco"]   = "application/x-cocoa";
+    _mime_type["jardiff"] = "application/x-java-archive-diff";
+    _mime_type["jnlp"]  = "application/x-java-jnlp-file";
+    _mime_type["run"]   = "application/x-makeself";
+    _mime_type["pl"]    = "application/x-perl";
+    _mime_type["pm"]    = "application/x-perl";
+    _mime_type["prc"]   = "application/x-pilot";
+    _mime_type["pdb"]   = "application/x-pilot";
+    _mime_type["rar"]   = "application/x-rar-compressed";
+    _mime_type["rpm"]   = "application/x-redhat-package-manager";
+    _mime_type["sea"]   = "application/x-sea";
+    _mime_type["swf"]   = "application/x-shockwave-flash";
+    _mime_type["sit"]   = "application/x-stuffit";
+    _mime_type["tcl"]   = "application/x-tcl";
+    _mime_type["tk"]    = "application/x-tcl";
+    _mime_type["der"]   = "application/x-x509-ca-cert";
+    _mime_type["pem"]   = "application/x-x509-ca-cert";
+    _mime_type["crt"]   = "application/x-x509-ca-cert";
+    _mime_type["xpi"]   = "application/x-xpinstall";
+    _mime_type["xhtml"] = "application/xhtml+xml";
+    _mime_type["xspf"]  = "application/xspf+xml";
+    _mime_type["zip"]   = "application/zip";
+    _mime_type["bin"]   = "application/octet-stream";
+    _mime_type["exe"]   = "application/octet-stream";
+    _mime_type["dll"]   = "application/octet-stream";
+    _mime_type["deb"]   = "application/octet-stream";
+    _mime_type["dmg"]   = "application/octet-stream";
+    _mime_type["iso"]   = "application/octet-stream";
+    _mime_type["img"]   = "application/octet-stream";
+    _mime_type["msi"]   = "application/octet-stream";
+    _mime_type["msp"]   = "application/octet-stream";
+    _mime_type["msm"]   = "application/octet-stream";
+    _mime_type["mid"]   = "audio/midi";
+    _mime_type["midi"]  = "audio/midi";
+    _mime_type["kar"]   = "audio/midi";
+    _mime_type["mp3"]   = "audio/mpeg";
+    _mime_type["ogg"]   = "audio/ogg";
+    _mime_type["m4a"]   = "audio/x-m4a";
+    _mime_type["ra"]    = "audio/x-realaudio";
+    _mime_type["3gpp"]  = "video/3gpp";
+    _mime_type["3gp"]   = "video/3gpp";
+    _mime_type["ts"]    = "video/mp2t";
+    _mime_type["mp4"]   = "video/mp4";
+    _mime_type["mpeg"]  = "video/mpeg";
+    _mime_type["mpg"]   = "video/mpeg";
+    _mime_type["mov"]   = "video/quicktime";
+    _mime_type["webm"]  = "video/webm";
+    _mime_type["flv"]   = "video/x-flv";
+    _mime_type["m4v"]   = "video/x-m4v";
+    _mime_type["mng"]   = "video/x-mng";
+    _mime_type["asx"]   = "video/x-ms-asf";
+    _mime_type["asf"]   = "video/x-ms-asf";
+    _mime_type["wmv"]   = "video/x-ms-wmv";
+    _mime_type["avi"]   = "video/x-msvideo";
+}
+
 ConfigFile::~ConfigFile() {}
 
 std::string ConfigFile::trim(const std::string& str) {
@@ -145,7 +257,9 @@ int Webserv::pars_cfile(int ac, char** av) {
 }
 
 int Webserv::start_event(int ac, char** av) {
-    pars_cfile(ac,av);
+    if(pars_cfile(ac,av)){
+        throw std::runtime_error("wa93at chi 9wada");
+    }
     
     return 0;
 }

@@ -23,7 +23,9 @@ static std::string& trim(std::string& s, const char* t = " \t\n\r\f\v") {
 
 // === Orthodox Canonical Form (OCF) ===
 
-HttpRequest::HttpRequest() {}
+HttpRequest::HttpRequest() {
+   
+}
 
 HttpRequest::HttpRequest(const HttpRequest& src) {
     *this = src;

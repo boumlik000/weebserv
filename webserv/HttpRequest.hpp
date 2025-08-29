@@ -4,6 +4,12 @@
 #include <vector>
 #include <map>
 
+#define MAX_REQUEST 8192
+
+
+
+
+
 class HttpRequest {
 public:
     // === Orthodox Canonical Form (OCF) ===

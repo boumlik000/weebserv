@@ -110,6 +110,8 @@ class ConfigFile
         void addErrorPage(int code, const std::string& path);
         void addListenInfo(const std::string& ip, int port);
         void addLocationConfig(const LocationConfig& config);
+        std::map<std::string ,std::string> _mime_type;
+        
 
 
 int maxMatch(const std::string &s1, const std::string &s2) const {

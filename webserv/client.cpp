@@ -14,7 +14,7 @@ void Client::readRequest() {
     const int BUFFER_SIZE = 4096; // 4KB
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read = recv(_fd, buffer, BUFFER_SIZE - 1, MSG_DONTWAIT);
-    std::cout<<"request : "<<buffer<<std::endl;
+    // std::cout<<"request : "<<buffer<<std::endl;
     if (bytes_read > 0) {
         buffer[bytes_read] = 0;
         std::string tmp = buffer; 
@@ -208,36 +208,62 @@ void Client::_handlePost(const LocationConfig& location) {
 
 
 void Client::_handleGet(const LocationConfig& location) {
-    std::string restPath = _httpRequest.getUri().substr(location.path.size(), _httpRequest.getUri().size());
-    std::string path = location.root + "/" + restPath;
+    const std::string& uri = _httpRequest.getUri();
+    const std::string& base = location.path;
 
+    // تأكّد أن uri كاتبدا بـ base
+    if (uri.size() < base.size() || uri.compare(0, base.size(), base) != 0) {
+        _buildErrorResponse(404);
+        return;
+    }
+    std::string restPath = uri.substr(base.size()); // بلا length
+
+    std::string path = location.root + "/" + restPath;
+    std::cout << uri << " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"<<std::endl;
+    std::cout << path << " AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"<<std::endl;
+    bool isFile = false;
     // const char* path = "your_path_here";
 
     struct stat info;
 
     if (stat(path.c_str(), &info) < 0) {
-        std::cerr << "Cannot access " << path << std::endl;
-        // _buildErrorResponse(403); // 404 Not Found
-        // return;
+        _buildErrorResponse(errno == EACCES ? 403 : 404);
+        return;
     }
 
+    std::string mimetype;
     if (S_ISDIR(info.st_mode)) {
         std::cout << path << " is a directory\n";
-        path += "/" + location.index;
+        path += location.index;
     } else if (S_ISREG(info.st_mode)) {
-        std::cout << path << " is a regular file\n";
+        std::cout << path << " is a regular file-----------------------------------------------------------------------------------"<<std::endl;;
     } else {
         std::cout << path << " is neither a regular file nor a directory\n";
     }
     std::cout <<  "root ======  " << location.root << "  ||||||||||||  " <<  _httpRequest.getUri() << std::endl ;
     std::ifstream file(path.c_str());
     if (!file.is_open()) {
-         if (access(path.c_str(), F_OK) != 0)
-            _buildErrorResponse(404); // 404 Not Found
-         else if (access(path.c_str(), R_OK) != 0)
-            _buildErrorResponse(403); // 404 Not Found
+        _buildErrorResponse(404); // 404 Not Found
         return;
     }
+    // cheak if  it  in my mime type
+    int pos = path.rfind('.');
+    if(pos != std::string::npos && pos + 1 < path.size())
+    {
+        mimetype = path.substr(pos + 1); 
+        std::cout << mimetype << std::endl;
+    }
+    else
+        mimetype = "bin";
+    if(!_config._mime_type.count(mimetype))
+    {
+        _buildErrorResponse(408); // 404 Not Found
+        return;
+    }
+
+
+
+    std::map<std::string, std::string>::const_iterator it = _config._mime_type.find(mimetype);
     // كنقراو المحتوى ديال الملف كامل
     std::stringstream buffer;
     buffer << file.rdbuf();
@@ -245,7 +271,7 @@ void Client::_handleGet(const LocationConfig& location) {
     // بناء الجواب الناجح
     _httpResponse.setStatusCode(200);
     _httpResponse.setStatusMessage("ok");
-    _httpResponse.addHeader("Content-Type", "text/html"); // (خاصك دير لوجيك باش تعرف النوع الصحيح)
+    _httpResponse.addHeader("Content-Type", it->second); // (خاصك دير لوجيك باش تعرف النوع الصحيح)
     _httpResponse.addHeader("Content-Length", SSTR(fileContent.length())); // SSTR كتحول رقم لسترينغ
     _httpResponse.setBody(fileContent);
 
