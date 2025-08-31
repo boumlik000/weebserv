@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <climits>
 
 // Forward declarations
 class ConfigFile;
@@ -40,6 +41,15 @@ struct LocationConfig {
     std::string redirect_code;
     std::string redirect_path;
     bool has_redirect;
+    bool isMethodAllowed(const std::string &method) const
+    {
+        for(int i = 0; i < allowed_methods.size(); i++)
+        {
+            if(allowed_methods[i] == method)
+                return true;
+        }
+        return false;
+    }
 
     // Constructor to set default values
     LocationConfig() : index("index."), autoindex("off"), upload("pages/upload") , has_redirect(false) {}
@@ -85,22 +95,71 @@ class ConfigFile
         // Getters
         const std::vector<struct ListenInfo>& getListenInfos() const;
         const std::map<int, std::string>& getErrorPages() const;
+        // Enhanced error page getters
+        // const std::map<int, std::string>& getErrorPages() const; // Keep the original
+        std::string getErrorPage(int status_code) const;// Get path by status code
+        std::string getErrorPageMessage(int status_code) const;
         unsigned int getMaxSize() const;
         const std::vector<LocationConfig>& getLocationConfigs() const;
-
+        
         // Setters (if needed for testing)
         void setMaxSize(unsigned int size);
         void addErrorPage(int code, const std::string& path);
         void addListenInfo(const std::string& ip, int port);
         void addLocationConfig(const LocationConfig& config);
+        std::map<std::string ,std::string> _mime_type;
+        
+
+
+int maxMatch(const std::string &s1, const std::string &s2) const {
+    if (s1.empty() || s2.empty()) {
+        return 0;
+    }
+
+    size_t i = 0;
+    int lastSlashPos = 0;
+
+    // Find common prefix
+    while (i < s1.length() && i < s2.length() && s1[i] == s2[i]) {
+        if (s1[i] == '/') {
+            lastSlashPos = i + 1; // Position after the slash
+        }
+        i++;
+    }
+
+    // If we matched the entire s1 and it ends with '/' or s2 has '/' next
+    if (i == s1.length()) {
+        // C++98 equivalent of s1.back() is s1[s1.length() - 1]
+        if (s1[s1.length() - 1] == '/' || i == s2.length() || s2[i] == '/') {
+            return s1.length();
+        }
+    }
+
+    return lastSlashPos;
+}
+        LocationConfig findLocationFor(const std::string &uri) const {
+            int max = INT_MIN;
+            LocationConfig chosen;
+            for(int i = 0; i < location_configs.size(); i++)
+            {
+                if(location_configs[i].path == uri)
+                    return location_configs[i];
+                int match = maxMatch(location_configs[i].path, uri);
+                if(match > max)
+                {
+                    chosen = location_configs[i];
+                    max = match;
+                }
+            }
+            return chosen;
+        }
 };
 
 class Webserv {
     ConfigFile config;
     public:
+        const ConfigFile& getConfig() const{return config;};
         int pars_cfile(int ac, char** av);
         int start_event(int ac, char** av);
 };
-
-
 #endif // WEBSERV_HPP

@@ -1,6 +1,6 @@
 #include"server.hpp"
 
-Server::Server(){
+Server::Server(): config(g_default_config){
 }
 Server::~Server(){
     for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); ++it) {
@@ -15,28 +15,29 @@ Server::~Server(){
         close(epoll_fd);
     }
 }
-
+Server::Server(const ConfigFile& _config) : config(_config){
+    run();
+}
 
 Server& Server::operator=(const Server& rhs){
     (void)rhs;
     return *this;
 }
-Server::Server(const Server& src):epoll_fd(src.epoll_fd){
+Server::Server(const Server& src):config(src.config), epoll_fd(src.epoll_fd){
     listening_fds = src.listening_fds;
     clients = src.clients;
 }
 
 void Server::setupServer(){
-    epoll_fd = epoll_create1(0);
+    epoll_fd = epoll_create1(EPOLL_CLOEXEC);
     if (epoll_fd == -1) {
         std::cerr<<"creation epoll failed"<<std::endl;
         return ;
     }
-
     const std::vector<ListenInfo>& listenInfos = config.getListenInfos();
 
     for (size_t i = 0; i < listenInfos.size(); ++i) {
-        int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+        int server_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
         if (server_fd == -1) {
             perror("socket");
             continue;
@@ -58,7 +59,7 @@ void Server::setupServer(){
             continue;
         }
         
-        fcntl(server_fd, F_SETFL, O_NONBLOCK);
+        // fcntl(server_fd, F_SETFL, O_NONBLOCK);
     
         std::cout << "Server listening on " << listenInfos[i].ip << ":" << listenInfos[i].port << std::endl;
     
@@ -80,50 +81,101 @@ void Server::setupServer(){
 void    Server::removeClient(int client_fd){
     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
     close(client_fd);
+    std::cerr<<"disconnected "<<client_fd<<std::endl;
     clients.erase(client_fd);
+    notifEvent.erase(client_fd);
 }
 void    Server::handleNewConnection(int listener_fd){
-        struct sockaddr_in client_addr;
-        socklen_t client_len = sizeof(client_addr);
-        int client_fd = accept(listener_fd, (struct sockaddr *)&client_addr, &client_len);
-        if (client_fd == -1) {
-            perror("accept");
-            return;
+    struct sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    int client_fd = accept4(listener_fd, (struct sockaddr *)&client_addr, &client_len, SOCK_NONBLOCK);
+    if (client_fd == -1) {
+       if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            std::cerr << "Failed to accept connection: " << strerror(errno) << std::endl;
         }
-        fcntl(client_fd, F_SETFL, O_NONBLOCK);
-        struct epoll_event event;
-        event.events = EPOLLIN;
-        event.data.fd = client_fd;
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1) {
-            perror("epoll_ctl: add client_fd");
-            close(client_fd);
-            return;
-        }
-        clients[client_fd] = Client(client_fd);
-        std::cout << "New connection established with fd: " << client_fd << std::endl;
-}
-void    Server::handleClientEvent(int client_fd){
-    Client& client = clients[client_fd];
-    try {
-        client.readRequest(); // خلي الكليان يتكلف بالقراءة
-        client.process();     // خليه يعالج الطلب ويصاوب الجواب
-        client.sendResponse();// خليه يصيفط الجواب
-    } catch (const std::exception& e) {
-        std::cerr << "Error handling client " << client_fd << ": " << e.what() << std::endl;
-        removeClient(client_fd); // إلى وقع شي خطأ، كنمسحوه
         return;
     }
-    if (client.isDone()) {
-        removeClient(client_fd);
+    clients.insert(std::make_pair(client_fd, Client(client_fd, config)));
+    struct epoll_event event;
+    event.events = EPOLLIN | EPOLLOUT | EPOLLET;;
+    event.data.fd = client_fd;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1) {
+        perror("epoll_ctl: add client_fd");
+        close(client_fd);
+        return;
     }
 
+    
+    std::cout << "New connection established with fd: " << client_fd << std::endl;
 }
+
+void Server::handleClientEvent() {
+    // FIX: Collect clients to remove instead of removing during iteration
+        std::vector<int> clients_to_remove;
+        
+        std::map<int, Client>::iterator it;
+        for (it = clients.begin(); it != clients.end(); ++it) {
+            int client_fd = it->first;
+            Client* client = &it->second;
+            
+            uint32_t events = notifEvent[client_fd];
+            
+            if (events & (EPOLLHUP | EPOLLERR)) {
+                std::cout << "Client disconnected (fd: " << client_fd << ")" << std::endl;
+                clients_to_remove.push_back(client_fd);
+                continue;
+            }
+            
+            if (events & EPOLLIN) {
+                if (client->getState() == AWAITING_REQUEST) {
+                    client->readRequest();
+                }
+                if (client->getState() == REQUEST_RECEIVED) {
+                    client->process();
+                }
+            }
+            
+            if (events & EPOLLOUT) {
+                if (client->getState() == SENDING_RESPONSE) {
+                    client->sendResponse();
+                }else if (client->getState() == SENDING_STATIC_FILE) { // <--- ها التعديل
+                    client->_sendNextFileChunk(); // كنعيطو للدالة الجديدة ديالنا
+                }
+            }
+            
+            if (client->isDone()) {
+                clients_to_remove.push_back(client_fd);
+            }
+        }
+        
+        // Now safely remove all clients that need to be removed
+        for (size_t i = 0; i < clients_to_remove.size(); ++i) {
+            removeClient(clients_to_remove[i]);
+        }
+}
+// void    Server::handleClientEvent(int client_fd){
+//     Client& client = clients[client_fd];
+//     try {
+//         client.readRequest(); // خلي الكليان يتكلف بالقراءة
+//         client.process();     // خليه يعالج الطلب ويصاوب الجواب
+//         client.sendResponse();// خليه يصيفط الجواب
+//     } catch (const std::exception& e) {
+//         std::cerr << "Error handling client " << client_fd << ": " << e.what() << std::endl;
+//         removeClient(client_fd); // إلى وقع شي خطأ، كنمسحوه
+//         return;
+//     }
+//     if (client.isDone()) {
+//         // removeClient(client_fd);
+//     }
+
+// }
 
 void    Server::eventLoop(){
     struct epoll_event events_received[MAX_EVENTS];
+    int EVENT = -1;
     while (true)
     {
-        int num_events = epoll_wait(epoll_fd, events_received, MAX_EVENTS, -1);
+        int num_events = epoll_wait(epoll_fd, events_received, MAX_EVENTS, EVENT);
         for(int i = 0; i < num_events; i++)
         {
             int active_fd = events_received[i].data.fd;
@@ -131,9 +183,14 @@ void    Server::eventLoop(){
             if (it != listening_fds.end()) {
                 handleNewConnection(active_fd);
             } else {
-                handleClientEvent(active_fd);
+                notifEvent[active_fd] = events_received[i].events;
             }
         }
+        handleClientEvent();
+        if(clients.size())
+            EVENT = 0;
+        else
+            EVENT = -1;
     }
     
 }
