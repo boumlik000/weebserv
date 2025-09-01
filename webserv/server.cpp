@@ -3,10 +3,11 @@
 Server::Server(): config(g_default_config){
 }
 Server::~Server(){
-    for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); ++it) {
-        epoll_ctl(epoll_fd, EPOLL_CTL_DEL, it->first, NULL);
+    for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
+        delete it->second; // كمسحو الأوبجيكت
         close(it->first);
     }
+    clients.clear(); // كنخويو الـ map
     for (size_t i = 0; i < listening_fds.size(); ++i) {
         epoll_ctl(epoll_fd, EPOLL_CTL_DEL, listening_fds[i], NULL);
         close(listening_fds[i]);
@@ -82,7 +83,12 @@ void    Server::removeClient(int client_fd){
     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
     close(client_fd);
     std::cerr<<"disconnected "<<client_fd<<std::endl;
-    clients.erase(client_fd);
+    // فـ server.cpp -> removeClient
+    std::map<int, Client*>::iterator it = clients.find(client_fd);
+    if (it != clients.end()) {
+        delete it->second; // <== كنزيدو هادي باش نمسحو الأوبجيكت
+        clients.erase(it); // كنمسحو المؤشر من الـ map
+    }
     notifEvent.erase(client_fd);
 }
 void    Server::handleNewConnection(int listener_fd){
@@ -95,7 +101,10 @@ void    Server::handleNewConnection(int listener_fd){
         }
         return;
     }
-    clients.insert(std::make_pair(client_fd, Client(client_fd, config)));
+    // فـ server.cpp -> handleNewConnection()
+// فـ server.cpp -> handleNewConnection
+    Client* new_client = new Client(client_fd, config);
+    clients.insert(std::make_pair(client_fd, new_client));    // clients.insert(std::make_pair(client_fd, Client(client_fd, config)));
     struct epoll_event event;
     event.events = EPOLLIN | EPOLLOUT | EPOLLET;;
     event.data.fd = client_fd;
@@ -108,50 +117,57 @@ void    Server::handleNewConnection(int listener_fd){
     
     std::cout << "New connection established with fd: " << client_fd << std::endl;
 }
+// فـ server.cpp
+void Server::checkTimeouts() {
+    time_t now = time(NULL);
+    std::vector<int> clients_to_remove;
 
+    for (std::map<int, Client *>::iterator it = clients.begin(); it != clients.end(); ++it) {
+        double idle_seconds = difftime(now, it->second->getLastActivity());
+
+        if (idle_seconds > TIMEOUT_SECONDS) {
+            std::cout << "\033[36mClient " << it->first << " has timed out due to inactivity.\033[0m" << std::endl;
+            clients_to_remove.push_back(it->first);
+        }
+    }
+
+    for (size_t i = 0; i < clients_to_remove.size(); ++i) {
+        removeClient(clients_to_remove[i]);
+    }
+}
+// فـ server.cpp
 void Server::handleClientEvent() {
-    // FIX: Collect clients to remove instead of removing during iteration
-        std::vector<int> clients_to_remove;
-        
-        std::map<int, Client>::iterator it;
-        for (it = clients.begin(); it != clients.end(); ++it) {
-            int client_fd = it->first;
-            Client* client = &it->second;
-            
-            uint32_t events = notifEvent[client_fd];
-            
-            if (events & (EPOLLHUP | EPOLLERR)) {
-                std::cout << "Client disconnected (fd: " << client_fd << ")" << std::endl;
-                clients_to_remove.push_back(client_fd);
-                continue;
-            }
-            
-            if (events & EPOLLIN) {
-                if (client->getState() == AWAITING_REQUEST) {
-                    client->readRequest();
-                }
-                if (client->getState() == REQUEST_RECEIVED) {
-                    client->process();
-                }
-            }
-            
-            if (events & EPOLLOUT) {
-                if (client->getState() == SENDING_RESPONSE) {
-                    client->sendResponse();
-                }else if (client->getState() == SENDING_STATIC_FILE) { // <--- ها التعديل
-                    client->_sendNextFileChunk(); // كنعيطو للدالة الجديدة ديالنا
-                }
-            }
-            
-            if (client->isDone()) {
-                clients_to_remove.push_back(client_fd);
-            }
+    std::vector<int> clients_to_remove;
+    
+    std::map<int, Client *>::iterator it;
+    for (it = clients.begin(); it != clients.end(); ++it) {
+        int client_fd = it->first;
+        Client* client = it->second;
+        uint32_t events = notifEvent[client_fd];
+
+        if (events & (EPOLLHUP | EPOLLERR)) {
+            clients_to_remove.push_back(client_fd);
+            continue;
         }
-        
-        // Now safely remove all clients that need to be removed
-        for (size_t i = 0; i < clients_to_remove.size(); ++i) {
-            removeClient(clients_to_remove[i]);
+
+        // الخطوة 1: يلا كاين ما يتقرا، كنقراوه
+        if (events & EPOLLIN) {
+            client->readRequest();
         }
+
+        // الخطوة 2: كنعطيو للعقل المدبر الجديد يدير خدمتو
+        client->manageState();
+
+        if (client->isDone()) {
+            clients_to_remove.push_back(client_fd);
+        }
+    }
+    
+    for (size_t i = 0; i < clients_to_remove.size(); ++i) {
+        removeClient(clients_to_remove[i]);
+    }
+    // كنمسحو ال notifEvent باش منعاودوش نعالجو نفس الحدث
+    notifEvent.clear();
 }
 // void    Server::handleClientEvent(int client_fd){
 //     Client& client = clients[client_fd];
@@ -191,6 +207,8 @@ void    Server::eventLoop(){
             EVENT = 0;
         else
             EVENT = -1;
+        checkTimeouts();
+
     }
     
 }

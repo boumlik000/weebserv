@@ -58,6 +58,7 @@ bool ConfigFile::isValidErrorCode(int code) {
     valid_codes.insert(502);
     valid_codes.insert(503);
     valid_codes.insert(504);
+    valid_codes.insert(200);
     return valid_codes.find(code) != valid_codes.end();
 }
 
@@ -442,14 +443,19 @@ bool ConfigFile::parseConfigFile(const std::string& filename)
     default_codes.push_back(501);
     default_codes.push_back(502);
     default_codes.push_back(503);
+    default_codes.push_back(200);
     // default_codes.push_back(504);
 
     for (size_t i = 0; i < default_codes.size(); ++i) {
         int code = default_codes[i];
         if (error_pages.find(code) == error_pages.end()) {
             std::stringstream ss;
-            ss << "pages/error/error-" << code << ".html";
+            if(code == 200)
+                ss << "pages/autoindex/autoindex.html";
+            else
+                ss << "pages/error/error-" << code << ".html";
             error_pages[code] = ss.str();
+            
         }
     }
 

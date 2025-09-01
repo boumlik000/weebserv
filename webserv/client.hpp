@@ -30,11 +30,13 @@ static ConfigFile g_default_config;
 class Client {
 public:
     // OCF + Constructor لي غنخدمو بيه
-    Client();
-    Client(int client_fd, const ConfigFile& conf);
     Client(const Client& src);
     Client& operator=(const Client& rhs);
+    Client();
+    Client(int client_fd, const ConfigFile& conf);
     ~Client();
+    void _resetForNewRequest();
+    void manageState();
 
     // === الدوال الرئيسية لي كيستدعيهم السيرفر ===
     void readRequest();  // كتستعمل recv باش تقرا الطلب
@@ -45,7 +47,10 @@ public:
     void _buildErrorResponse(int statusCode);
     void _handleDelete(const LocationConfig& location);
     void _handlePost(const LocationConfig& location);
-        
+    bool _valid_content(std::string);
+    void _buildautoindex(std::string);
+
+    time_t getLastActivity() const; // <== زيد هادي
 
     // === دوال مساعدة ===
     int getFd() const;
@@ -64,4 +69,14 @@ private:
 
     size_t              _bytesSent;       // شحال صيفطنا من الجواب (باش نعرفو فين وصلنا)
     time_t              _lastActivity;    // آخر وقت كان فيه نشاط (باش نحسبو الـ timeout)
+
+    std::vector<char> _fileChunkBuffer;
+    size_t            _chunkBytesSent;
+
+    bool                _isRangeRequest;  // واش الطلب فيه Range header
+    long long           _rangeStart;      // منين غيبدا الجزء
+    long long           _rangeEnd;        // فين غيسالي الجزء
+    long long           _fileSize;        // الحجم الكامل للملف
+    long long           _bytesToSend;     // شحال من بايت خاصنا نصيفطو فهاد الجواب
+    long long           _totalBytesSent;  // شحال صيفطنا فالمجموع
 };

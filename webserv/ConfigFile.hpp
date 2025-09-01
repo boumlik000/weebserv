@@ -52,7 +52,7 @@ struct LocationConfig {
     }
 
     // Constructor to set default values
-    LocationConfig() : index("index."), autoindex("off"), upload("pages/upload") , has_redirect(false) {}
+    LocationConfig() : index("off"), autoindex("off"), upload("pages/upload") , has_redirect(false) {}
 };
 
 class ConfigFile 

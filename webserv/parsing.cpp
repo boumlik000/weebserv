@@ -218,6 +218,8 @@ std::string ConfigFile::getErrorPageMessage(int status_code) const {
             return "Service Unavailable";
         case 504:
             return "Gateway Timeout";
+        case 200:
+            return "ok";
         default:
             return "Unknown Error";
     }
@@ -252,7 +254,7 @@ int Webserv::pars_cfile(int ac, char** av) {
         return 1;
     }
     std::cout << "Configuration parsed successfully!" << std::endl;
-    // config.printParsedConfig();
+    config.printParsedConfig();
     return 0;
 }
 

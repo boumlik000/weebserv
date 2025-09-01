@@ -82,7 +82,7 @@ std::string HttpResponse::buildResponseString(bool BODY) const {
     std::stringstream response_stream;
 
     // 1. بناء السطر الأول (Status Line)
-    response_stream << "HTTP/1.0 " << this->_statusCode << " " << this->_statusMessage << "\r\n";
+    response_stream << "HTTP/1.1 " << this->_statusCode << " " << this->_statusMessage << "\r\n";
 
     // 2. بناء الـ Headers
     for (std::map<std::string, std::string>::const_iterator it = this->_headers.begin(); it != this->_headers.end(); ++it) {
