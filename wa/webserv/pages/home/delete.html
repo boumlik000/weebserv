@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Deletion Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .file-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-delete {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .btn-delete:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-clear {
+            background: linear-gradient(45deg, #74b9ff, #0984e3);
+            color: white;
+        }
+
+        .btn-clear:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(116, 185, 255, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-weight: 500;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .status.success {
+            background: linear-gradient(45deg, #00b894, #00a085);
+            color: white;
+            border-left: 5px solid #00b894;
+        }
+
+        .status.error {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border-left: 5px solid #ff6b6b;
+        }
+
+        .status.info {
+            background: linear-gradient(45deg, #74b9ff, #0984e3);
+            color: white;
+            border-left: 5px solid #74b9ff;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .file-list {
+            margin-top: 30px;
+        }
+
+        .file-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .warning {
+            background: linear-gradient(45deg, #fdcb6e, #e17055);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗑️ File Deleter</h1>
+            <p>Enter file URLs to delete them from the server</p>
+        </div>
+
+        <div class="warning">
+            ⚠️ Warning: This action is irreversible. Use with caution!
+        </div>
+
+        <form id="deleteForm">
+            <div class="input-group">
+                <label for="filePath">File URL:</label>
+                <input 
+                    type="url" 
+                    id="filePath" 
+                    class="file-input" 
+                    placeholder="Enter file URL (e.g., http://10.14.9.6:8080/pp/file_886021.raw)"
+                    required
+                >
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn btn-delete" id="deleteBtn">
+                    🗑️ Delete File
+                </button>
+                <button type="button" class="btn btn-clear" id="clearBtn">
+                    🧹 Clear
+                </button>
+            </div>
+        </form>
+
+        <div id="status" class="status" style="display: none;"></div>
+
+        <div class="file-list" id="fileList" style="display: none;">
+            <h3>Files to be deleted:</h3>
+            <div id="fileItems"></div>
+        </div>
+    </div>
+
+    <script>
+        class FileDeleter {
+            constructor() {
+                this.form = document.getElementById('deleteForm');
+                this.filePathInput = document.getElementById('filePath');
+                this.deleteBtn = document.getElementById('deleteBtn');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.status = document.getElementById('status');
+                this.fileList = document.getElementById('fileList');
+                this.fileItems = document.getElementById('fileItems');
+                
+                this.filesToDelete = [];
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                this.form.addEventListener('submit', this.handleSubmit.bind(this));
+                this.clearBtn.addEventListener('click', this.clearAll.bind(this));
+                
+                // Add file to list on Enter
+                this.filePathInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && e.ctrlKey) {
+                        e.preventDefault();
+                        this.addFileToList();
+                    }
+                });
+            }
+
+            addFileToList() {
+                const fileUrl = this.filePathInput.value.trim();
+                if (fileUrl && this.isValidUrl(fileUrl) && !this.filesToDelete.includes(fileUrl)) {
+                    this.filesToDelete.push(fileUrl);
+                    this.updateFileList();
+                    this.filePathInput.value = '';
+                }
+            }
+
+            updateFileList() {
+                if (this.filesToDelete.length === 0) {
+                    this.fileList.style.display = 'none';
+                    return;
+                }
+
+                this.fileList.style.display = 'block';
+                this.fileItems.innerHTML = this.filesToDelete
+                    .map(file => `<div class="file-item">${file}</div>`)
+                    .join('');
+            }
+
+            async handleSubmit(e) {
+                e.preventDefault();
+                
+                const fileUrl = this.filePathInput.value.trim();
+                if (!fileUrl) {
+                    this.showStatus('Please enter a file URL', 'error');
+                    return;
+                }
+
+                // Validate URL format
+                if (!this.isValidUrl(fileUrl)) {
+                    this.showStatus('Please enter a valid URL (e.g., http://10.14.9.6:8080/pp/file.raw)', 'error');
+                    return;
+                }
+
+                await this.deleteFile(fileUrl);
+            }
+
+            isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            async deleteFile(fileUrl) {
+                this.setLoading(true);
+                this.showStatus('Sending DELETE request...', 'info', true);
+
+                try {
+                    // Send DELETE request directly to the provided URL
+                    const response = await fetch(fileUrl, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        }
+                    });
+
+                    if (response.ok) {
+                        this.showStatus(`✅ File deleted successfully: ${fileUrl}`, 'success');
+                        this.filePathInput.value = '';
+                        
+                        // Remove from list if it exists
+                        this.filesToDelete = this.filesToDelete.filter(f => f !== fileUrl);
+                        this.updateFileList();
+                    } else {
+                        // Handle different HTTP status codes
+                        const errorMessage = this.getErrorMessage(response.status, fileUrl);
+                        this.showStatus(errorMessage, 'error');
+                        
+                        // Log additional details for debugging
+                        try {
+                            const errorData = await response.text();
+                            console.error(`Delete failed (${response.status}):`, errorData);
+                            console.error(`URL attempted: ${fileUrl}`);
+                        } catch (e) {
+                            console.error(`Delete failed (${response.status}): Could not read error response`);
+                            console.error(`URL attempted: ${fileUrl}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Delete error:', error);
+                    console.error(`URL attempted: ${fileUrl}`);
+                    
+                    // Handle network errors
+                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                        this.showStatus(`❌ Network error: Could not connect to ${fileUrl}`, 'error');
+                    } else if (error.name === 'TypeError' && error.message.includes('CORS')) {
+                        this.showStatus('❌ CORS error: Server may not allow cross-origin DELETE requests', 'error');
+                    } else {
+                        this.showStatus(`❌ Unexpected error: ${error.message}`, 'error');
+                    }
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            getErrorMessage(status, fileUrl) {
+                const fileName = fileUrl.split('/').pop() || fileUrl;
+                
+                switch (status) {
+                    case 404:
+                        return `❌ File not found: "${fileName}" does not exist on the server`;
+                    case 403:
+                        return `🔒 Access denied: You don't have permission to delete "${fileName}"`;
+                    case 401:
+                        return `🔐 Unauthorized: Please log in to delete files`;
+                    case 409:
+                        return `⚠️ Conflict: "${fileName}" is currently in use and cannot be deleted`;
+                    case 423:
+                        return `🔒 File locked: "${fileName}" is locked and cannot be deleted`;
+                    case 500:
+                        return `🔧 Server error: Internal server error while deleting "${fileName}"`;
+                    case 503:
+                        return `⏳ Service unavailable: Server is temporarily unavailable`;
+                    case 413:
+                        return `📏 Request too large: File path is too long`;
+                    case 429:
+                        return `🕐 Too many requests: Please wait before trying again`;
+                    case 405:
+                        return `🚫 Method not allowed: DELETE method is not supported for this URL`;
+                    case 400:
+                        return `❌ Bad request: Invalid request format`;
+                    default:
+                        return `❌ Delete failed: Server returned status ${status} for "${fileName}"`;
+                }
+            }
+
+            constructDeleteUrl(filePath) {
+                // This method is no longer used since we send DELETE directly to the provided URL
+                // Keeping it for backward compatibility
+                return filePath;
+            }
+
+            setLoading(isLoading) {
+                this.deleteBtn.disabled = isLoading;
+                if (isLoading) {
+                    this.deleteBtn.innerHTML = '<span class="loading"></span>Deleting...';
+                } else {
+                    this.deleteBtn.innerHTML = '🗑️ Delete File';
+                }
+            }
+
+            showStatus(message, type, showLoading = false) {
+                this.status.style.display = 'flex';
+                this.status.className = `status ${type}`;
+                this.status.innerHTML = showLoading ? 
+                    `<span class="loading"></span>${message}` : 
+                    message;
+
+                // Auto-hide after 5 seconds for success/error messages
+                if (type === 'success' || type === 'error') {
+                    setTimeout(() => {
+                        this.status.style.display = 'none';
+                    }, 5000);
+                }
+            }
+
+            clearAll() {
+                this.filePathInput.value = '';
+                this.filesToDelete = [];
+                this.updateFileList();
+                this.status.style.display = 'none';
+                this.filePathInput.focus();
+            }
+        }
+
+        // Initialize the file deleter when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new FileDeleter();
+        });
+
+        // Additional utility functions
+        function validateFilePath(path) {
+            // Basic validation for file paths
+            const invalidChars = /[<>:"|?*]/;
+            return !invalidChars.test(path) && path.length > 0;
+        }
+
+        function formatFileSize(bytes) {
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 Bytes';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index of / - The Good Fellas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #0b0b2b, #1b2735 70%, #090a0f);
+            overflow-x: hidden;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #ffffff;
+            padding: 2rem;
+            position: relative;
+        }
+
+        /* Stars behind everything */
+        .stars {
+            width: 1px;
+            height: 1px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: white;
+            box-shadow: 2vw 5vh 2px white, 10vw 8vh 2px white, 15vw 15vh 1px white,
+                22vw 22vh 1px white, 28vw 12vh 2px white, 32vw 32vh 1px white,
+                38vw 18vh 2px white, 42vw 35vh 1px white, 48vw 25vh 2px white,
+                53vw 42vh 1px white, 58vw 15vh 2px white, 63vw 38vh 1px white,
+                68vw 28vh 2px white, 73vw 45vh 1px white, 78vw 32vh 2px white,
+                83vw 48vh 1px white, 88vw 20vh 2px white, 93vw 52vh 1px white,
+                98vw 35vh 2px white, 5vw 60vh 1px white, 12vw 65vh 2px white,
+                18vw 72vh 1px white, 25vw 78vh 2px white, 30vw 85vh 1px white,
+                35vw 68vh 2px white, 40vw 82vh 1px white, 45vw 92vh 2px white,
+                50vw 75vh 1px white, 55vw 88vh 2px white, 60vw 95vh 1px white,
+                65vw 72vh 2px white, 70vw 85vh 1px white, 75vw 78vh 2px white,
+                80vw 92vh 1px white, 85vw 82vh 2px white, 90vw 88vh 1px white,
+                95vw 75vh 2px white;
+            animation: twinkle 8s infinite linear;
+            z-index: -100;
+        }
+
+        .shooting-star {
+            position: fixed;
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, white, transparent);
+            animation: shoot 3s infinite ease-in;
+            z-index: -99;
+        }
+
+        .shooting-star:nth-child(2) {
+            top: 20%;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .shooting-star:nth-child(3) {
+            top: 35%;
+            left: -100px;
+            animation-delay: 1s;
+        }
+
+        .shooting-star:nth-child(4) {
+            top: 50%;
+            left: -100px;
+            animation-delay: 2s;
+        }
+
+        .shooting-star:nth-child(5) {
+            top: 65%;
+            left: -100px;
+            animation-delay: 0.5s;
+        }
+
+        .shooting-star:nth-child(6) {
+            top: 80%;
+            left: -100px;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.8;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        @keyframes shoot {
+            0% {
+                transform: translateX(0) translateY(0) rotate(25deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(120vw) translateY(50vh) rotate(25deg);
+                opacity: 0;
+            }
+        }
+
+        /* Additional twinkling stars with different animation timing */
+        .stars::after {
+            content: "";
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            background: white;
+            box-shadow: 8vw 12vh 2px white, 16vw 18vh 1px white, 24vw 25vh 2px white,
+                33vw 15vh 1px white, 41vw 28vh 2px white, 49vw 35vh 1px white,
+                57vw 22vh 2px white, 65vw 42vh 1px white, 73vw 28vh 2px white,
+                81vw 48vh 1px white, 89vw 32vh 2px white, 97vw 45vh 1px white,
+                3vw 68vh 2px white, 11vw 75vh 1px white, 19vw 82vh 2px white,
+                27vw 88vh 1px white, 35vw 72vh 2px white, 43vw 85vh 1px white,
+                51vw 92vh 2px white, 59vw 78vh 1px white;
+            animation: twinkle 6s infinite linear reverse;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .title {
+            display: block;
+            margin: 0 auto 2rem auto;
+            max-width: 100%;
+            height: auto;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ffffff80;
+            margin-bottom: 1rem;
+        }
+
+        .path {
+            font-size: 1rem;
+            color: #008cff;
+            text-shadow: 0 0 5px #008cff;
+        }
+
+        .index-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 20;
+        }
+
+        .index-table th {
+            background: rgba(0, 140, 255, 0.2);
+            color: #ffffff;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #ffffff20;
+        }
+
+        .index-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #ffffff10;
+            transition: all 0.3s ease;
+        }
+
+        .index-table tr:hover {
+            background: rgba(0, 140, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .file-link {
+            color: #ffffff80;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .file-link:hover {
+            color: #008cff;
+            text-shadow: 0 0 5px #008cff;
+        }
+
+        .file-icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+
+        .folder-icon {
+            color: #ffd700;
+        }
+
+        .file-icon.html {
+            color: #ff6b35;
+        }
+
+        .file-icon.css {
+            color: #1572b6;
+        }
+
+        .file-icon.js {
+            color: #f7df1e;
+        }
+
+        .file-icon.img {
+            color: #ff69b4;
+        }
+
+        .file-icon.txt {
+            color: #90ee90;
+        }
+
+        .file-size {
+            color: #ffffff60;
+            font-size: 0.9rem;
+        }
+
+        .file-date {
+            color: #ffffff60;
+            font-size: 0.9rem;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            padding: 10px 20px;
+            text-transform: uppercase;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #ffffff80;
+            text-shadow: none;
+            background: transparent;
+            cursor: pointer;
+            box-shadow: transparent;
+            border: 1px solid #ffffff80;
+            transition: 0.5s ease;
+            user-select: none;
+            text-decoration: none;
+            z-index: 30;
+        }
+
+        .back-button:hover {
+            color: #ffffff;
+            background: #008cff;
+            border: 1px solid #008cff;
+            text-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff;
+            box-shadow: 0 0 5px #008cff, 0 0 20px #008cff, 0 0 50px #008cff,
+                0 0 100px #008cff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Stars and shooting stars in the background -->
+    <div class="stars"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    
+    <a href="/" class="back-button">← Back</a>
+
+    <div class="container">
+        <div class="header">
+            <img src="./Group1.png" alt="title" class="title">
+            <div class="subtitle">Directory Index</div>
+            <div class="path">Index of /api/v1/</div>
+        </div>
+
+        <table class="index-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Last Modified</th>
+                    <th>Size</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <a href="../" class="file-link">
+                            <span class="file-icon folder-icon">📁</span>
+                            Parent Directory
+                        </a>
+                    </td>
+                    <td class="file-date">-</td>
+                    <td class="file-size">-</td>
+                    <td class="file-size">Directory</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="auth/" class="file-link">
+                            <span class="file-icon folder-icon">📁</span>
+                            auth/
+                        </a>
+                    </td>
+                    <td class="file-date">2025-08-30 14:32</td>
+                    <td class="file-size">-</td>
+                    <td class="file-size">Directory</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="users/" class="file-link">
+                            <span class="file-icon folder-icon">📁</span>
+                            users/
+                        </a>
+                    </td>
+                    <td class="file-date">2025-08-31 09:15</td>
+                    <td class="file-size">-</td>
+                    <td class="file-size">Directory</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="data/" class="file-link">
+                            <span class="file-icon folder-icon">📁</span>
+                            data/
+                        </a>
+                    </td>
+                    <td class="file-date">2025-08-31 11:45</td>
+                    <td class="file-size">-</td>
+                    <td class="file-size">Directory</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="config.json" class="file-link">
+                            <span class="file-icon js">⚙️</span>
+                            config.json
+                        </a>
+                    </td>
+                    <td class="file-date">2025-08-31 12:30</td>
+                    <td class="file-size">2.4 KB</td>
+                    <td class="file-size">JSON File</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="README.md" class="file-link">
+                            <span class="file-icon txt">📄</span>
+                            README.md
+                        </a>
+                    </td>
+                    <td class="file-date">2025-08-30 16:20</td>
+                    <td class="file-size">1.8 KB</td>
+                    <td class="file-size">Markdown</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="index.html" class="file-link">
+                            <span class="file-icon html">🌐</span>
+                            index.html
+                        </a>
+                    </td>
+                    <td class="file-date">2025-08-31 13:45</td>
+                    <td class="file-size">5.2 KB</td>
+                    <td class="file-size">HTML Document</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="styles.css" class="file-link">
+                            <span class="file-icon css">🎨</span>
+                            styles.css
+                        </a>
+                    </td>
+                    <td class="file-date">2025-08-31 13:42</td>
+                    <td class="file-size">3.1 KB</td>
+                    <td class="file-size">CSS Stylesheet</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="app.js" class="file-link">
+                            <span class="file-icon js">⚡</span>
+                            app.js
+                        </a>
+                    </td>
+                    <td class="file-date">2025-08-31 13:40</td>
+                    <td class="file-size">12.7 KB</td>
+                    <td class="file-size">JavaScript</td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="logo.png" class="file-link">
+                            <span class="file-icon img">🖼️</span>
+                            logo.png
+                        </a>
+                    </td>
+                    <td class="file-date">2025-08-30 10:15</td>
+                    <td class="file-size">45.3 KB</td>
+                    <td class="file-size">PNG Image</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Add click functionality to file links
+        document.querySelectorAll('.file-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const filename = link.textContent.trim();
+                console.log(`Accessing: ${filename}`);
+                
+                // Add a brief glow effect on click
+                link.style.textShadow = '0 0 20px #008cff';
+                setTimeout(() => {
+                    link.style.textShadow = '';
+                }, 200);
+            });
+        });
+
+        // Add some interactive effects
+        document.addEventListener('mousemove', (e) => {
+            if (Math.random() > 0.99) {
+                createSparkle(e.clientX, e.clientY);
+            }
+        });
+
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.style.cssText = `
+                position: fixed;
+                left: ${x}px;
+                top: ${y}px;
+                width: 3px;
+                height: 3px;
+                background: #008cff;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 1000;
+                box-shadow: 0 0 10px #008cff;
+                animation: sparkleAnim 1s ease-out forwards;
+            `;
+            
+            document.body.appendChild(sparkle);
+            
+            setTimeout(() => {
+                sparkle.remove();
+            }, 1000);
+        }
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes sparkleAnim {
+                0% { opacity: 1; transform: scale(0); }
+                50% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
