@@ -12,24 +12,156 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(to bottom, #0b0b2b, #1b2735 70%, #090a0f);
             min-height: 100vh;
+            font-family: 'Arial', sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Stars behind everything */
+        .stars {
+            width: 1px;
+            height: 1px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: white;
+            box-shadow: 2vw 5vh 2px white, 10vw 8vh 2px white, 15vw 15vh 1px white,
+                22vw 22vh 1px white, 28vw 12vh 2px white, 32vw 32vh 1px white,
+                38vw 18vh 2px white, 42vw 35vh 1px white, 48vw 25vh 2px white,
+                53vw 42vh 1px white, 58vw 15vh 2px white, 63vw 38vh 1px white,
+                68vw 28vh 2px white, 73vw 45vh 1px white, 78vw 32vh 2px white,
+                83vw 48vh 1px white, 88vw 20vh 2px white, 93vw 52vh 1px white,
+                98vw 35vh 2px white, 5vw 60vh 1px white, 12vw 65vh 2px white,
+                18vw 72vh 1px white, 25vw 78vh 2px white, 30vw 85vh 1px white,
+                35vw 68vh 2px white, 40vw 82vh 1px white, 45vw 92vh 2px white,
+                50vw 75vh 1px white, 55vw 88vh 2px white, 60vw 95vh 1px white,
+                65vw 72vh 2px white, 70vw 85vh 1px white, 75vw 78vh 2px white,
+                80vw 92vh 1px white, 85vw 82vh 2px white, 90vw 88vh 1px white,
+                95vw 75vh 2px white;
+            animation: twinkle 8s infinite linear;
+            z-index: -100;
+        }
+
+        .shooting-star {
+            position: fixed;
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, rgb(255, 255, 255));
+            animation: shoot 3s infinite ease-in;
+            z-index: -99;
+        }
+
+        .shooting-star:nth-child(2) {
+            top: 20%;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .shooting-star:nth-child(3) {
+            top: 35%;
+            left: -100px;
+            animation-delay: 1s;
+        }
+
+        .shooting-star:nth-child(4) {
+            top: 50%;
+            left: -100px;
+            animation-delay: 2s;
+        }
+
+        .shooting-star:nth-child(5) {
+            top: 65%;
+            left: -100px;
+            animation-delay: 0.5s;
+        }
+
+        .shooting-star:nth-child(6) {
+            top: 80%;
+            left: -100px;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.8;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        @keyframes shoot {
+            0% {
+                transform: translateX(0) translateY(0) rotate(25deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(120vw) translateY(50vh) rotate(25deg);
+                opacity: 0;
+            }
+        }
+
+        /* Additional twinkling stars with different animation timing */
+        .stars::after {
+            content: "";
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            background: rgb(255, 65, 65);
+            box-shadow: 8vw 12vh 2px white, 16vw 18vh 1px white, 24vw 25vh 2px white,
+                33vw 15vh 1px white, 41vw 28vh 2px white, 49vw 35vh 1px white,
+                57vw 22vh 2px white, 65vw 42vh 1px white, 73vw 28vh 2px white,
+                81vw 48vh 1px white, 89vw 32vh 2px white, 97vw 45vh 1px white,
+                3vw 68vh 2px white, 11vw 75vh 1px white, 19vw 82vh 2px white,
+                27vw 88vh 1px white, 35vw 72vh 2px white, 43vw 85vh 1px white,
+                51vw 92vh 2px white, 59vw 78vh 1px white;
+            animation: twinkle 6s infinite linear reverse;
+        }
+
+        /* Additional atmospheric effects */
+        .bg-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .bg-effects::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 140, 255, 0.03) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(15, 15, 45, 0.8);
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
             padding: 40px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 140, 255, 0.1);
             max-width: 600px;
             width: 100%;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            z-index: 10;
         }
 
         .header {
@@ -38,17 +170,14 @@
         }
 
         .header h1 {
-            color: #333;
+            color: #ffffff;
             font-size: 2.5rem;
             margin-bottom: 10px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            text-shadow: 0 0 10px rgba(0, 140, 255, 0.5);
         }
 
         .header p {
-            color: #666;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 1.1rem;
         }
 
@@ -59,7 +188,7 @@
         .input-group label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
+            color: rgba(255, 255, 255, 0.9);
             font-weight: 600;
             font-size: 1rem;
         }
@@ -67,17 +196,24 @@
         .file-input {
             width: 100%;
             padding: 15px;
-            border: 2px solid #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
             font-size: 1rem;
             transition: all 0.3s ease;
-            background: white;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            backdrop-filter: blur(5px);
+        }
+
+        .file-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .file-input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #008cff;
+            box-shadow: 0 0 10px rgba(0, 140, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .button-group {
@@ -89,39 +225,63 @@
         .btn {
             flex: 1;
             padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: none;
+            background: transparent;
+            cursor: pointer;
+            box-shadow: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: 0.5s ease;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
         }
 
-        .btn-delete {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
-            color: white;
-        }
-
-        .btn-delete:hover:not(:disabled) {
+        .btn:hover:not(:disabled) {
+            color: #ffffff;
+            background: #008cff;
+            border: 1px solid #008cff;
+            text-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff;
+            box-shadow: 0 0 5px #008cff, 0 0 20px #008cff, 0 0 50px #008cff,
+                0 0 100px #008cff;
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
         }
 
-        .btn-clear {
-            background: linear-gradient(45deg, #74b9ff, #0984e3);
-            color: white;
-        }
-
-        .btn-clear:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(116, 185, 255, 0.3);
+        .btn:active {
+            transform: translateY(0);
         }
 
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+
+        .btn-delete:hover:not(:disabled) {
+            background: linear-gradient(-20deg, #ff0000,#0077ff, #4b0082, #9400d3);
+            background-size: 500% 500%;
+            animation: rainbow 6s ease-in-out infinite;
+            border: none;
+            /* border-image: linear-gradient(-45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3) 1; */
+            /* border-image-slice: 1; */
+            box-shadow: 0 0 5px #ff000091, 0 0 1px #ff80005b, 0 0 1px #ffff006c, 
+                0 0 20px #00ff00, 0 0 25px #0000ff, 0 0 30px #4b0082, 
+                0 0 35px #9400d3, 0 0 40px #ff0000;
+        }
+
+        @keyframes rainbow {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         .status {
@@ -135,24 +295,28 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
 
         .status.success {
-            background: linear-gradient(45deg, #00b894, #00a085);
-            color: white;
-            border-left: 5px solid #00b894;
+            background: rgba(0, 184, 148, 0.2);
+            color: #00b894;
+            border: 1px solid rgba(0, 184, 148, 0.3);
+            box-shadow: 0 0 10px rgba(0, 184, 148, 0.2);
         }
 
         .status.error {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
-            color: white;
-            border-left: 5px solid #ff6b6b;
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.2);
         }
 
         .status.info {
-            background: linear-gradient(45deg, #74b9ff, #0984e3);
-            color: white;
-            border-left: 5px solid #74b9ff;
+            background: rgba(0, 140, 255, 0.2);
+            color: #008cff;
+            border: 1px solid rgba(0, 140, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 140, 255, 0.2);
         }
 
         .loading {
@@ -174,28 +338,67 @@
             margin-top: 30px;
         }
 
+        .file-list h3 {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 15px;
+        }
+
         .file-item {
-            background: #f8f9fa;
+            background: rgba(255, 255, 255, 0.05);
             padding: 10px 15px;
             margin-bottom: 10px;
             border-radius: 8px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #008cff;
             font-family: monospace;
             word-break: break-all;
+            color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .warning {
-            background: linear-gradient(45deg, #fdcb6e, #e17055);
-            color: white;
+            background: rgba(253, 203, 110, 0.2);
+            color: #fdcb6e;
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 20px;
             text-align: center;
             font-weight: 600;
+            border: 1px solid rgba(253, 203, 110, 0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 10px rgba(253, 203, 110, 0.1);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Stars and shooting stars in the background -->
+    <div class="stars"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    
+    <!-- Background effects -->
+    <div class="bg-effects"></div>
+
     <div class="container">
         <div class="header">
             <h1>🗑️ File Deleter</h1>
@@ -249,6 +452,7 @@
                 
                 this.filesToDelete = [];
                 this.initializeEventListeners();
+                this.initializeSparkles();
             }
 
             initializeEventListeners() {
@@ -262,6 +466,38 @@
                         this.addFileToList();
                     }
                 });
+            }
+
+            initializeSparkles() {
+                // Add interactive sparkle effects
+                document.addEventListener('mousemove', (e) => {
+                    if (Math.random() > 0.98) {
+                        this.createSparkle(e.clientX, e.clientY);
+                    }
+                });
+            }
+
+            createSparkle(x, y) {
+                const sparkle = document.createElement('div');
+                sparkle.style.cssText = `
+                    position: fixed;
+                    left: ${x}px;
+                    top: ${y}px;
+                    width: 4px;
+                    height: 4px;
+                    background: #008cff;
+                    border-radius: 50%;
+                    pointer-events: none;
+                    z-index: 1000;
+                    box-shadow: 0 0 10px #008cff;
+                    animation: sparkleAnim 1s ease-out forwards;
+                `;
+                
+                document.body.appendChild(sparkle);
+                
+                setTimeout(() => {
+                    sparkle.remove();
+                }, 1000);
             }
 
             addFileToList() {
@@ -396,12 +632,6 @@
                 }
             }
 
-            constructDeleteUrl(filePath) {
-                // This method is no longer used since we send DELETE directly to the provided URL
-                // Keeping it for backward compatibility
-                return filePath;
-            }
-
             setLoading(isLoading) {
                 this.deleteBtn.disabled = isLoading;
                 if (isLoading) {
@@ -440,19 +670,16 @@
             new FileDeleter();
         });
 
-        // Additional utility functions
-        function validateFilePath(path) {
-            // Basic validation for file paths
-            const invalidChars = /[<>:"|?*]/;
-            return !invalidChars.test(path) && path.length > 0;
-        }
-
-        function formatFileSize(bytes) {
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            if (bytes === 0) return '0 Bytes';
-            const i = Math.floor(Math.log(bytes) / Math.log(1024));
-            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-        }
+        // Add sparkle animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes sparkleAnim {
+                0% { opacity: 1; transform: scale(0); }
+                50% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0); }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
