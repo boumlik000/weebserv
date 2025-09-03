@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Good Fellas</title>
+    
     <style>
         * {
             margin: 0;
@@ -21,6 +22,29 @@
             justify-content: center;
             overflow: hidden;
             position: relative;
+        }
+
+        /* Updated fireworks canvas - removed blur, increased opacity, better blending */
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0.7;
+            mix-blend-mode: screen;
+            pointer-events: auto;
+        }
+
+        .info-text {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            pointer-events: none; 
         }
 
         /* Stars behind everything */
@@ -127,13 +151,6 @@
         .title {
             max-width: 100%;
             height: auto;
-            
-            /* filter: 
-                drop-shadow(-20px 40px 5px rgba(255, 215, 0, 0.8))
-                drop-shadow(-20px 40px 10px rgb(255, 0, 0))
-                drop-shadow(-20px 40px 20px rgb(10, 255, 2))
-                drop-shadow(-20px 40px 40px rgb(0, 255, 213))
-                drop-shadow(-20px 40px 80px rgb(234, 0, 255)); */
             position: relative;
             z-index: 10;
         }
@@ -326,6 +343,10 @@
             }
         }
     </style>
+    <!-- dial fire works -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Stars and shooting stars in the background -->
@@ -359,7 +380,8 @@
             </button>
         </div>
     </div>
-
+    <canvas id="fireworksCanvas"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <script>
         function handleClick(method) {
             console.log(`${method} request triggered`);
@@ -406,6 +428,244 @@
             }
         `;
         document.head.appendChild(style);
+
+        // Updated fireworks system with better colors and cleaner appearance
+        const canvas = document.getElementById('fireworksCanvas');
+        const ctx = canvas.getContext('2d');
+        const infoText = document.getElementById('infoText');
+        let cw = window.innerWidth;
+        let ch = window.innerHeight;
+        canvas.width = cw;
+        canvas.height = ch;
+
+        let fireworks = [];
+        let particles = [];
+        let hue = 200; // Start with blue-ish colors to match theme
+        let timerTick = 0;
+        let timerTotal = 120; // Less frequent automatic fireworks
+        let isMouseDown = false;
+        let mouseX, mouseY;
+        let audioStarted = false;
+
+        let launchSynth, explosionSynth, reverb;
+
+        function setupAudio() {
+            reverb = new Tone.Reverb({
+                decay: 3,
+                preDelay: 0.01,
+                wet: 0.2
+            }).toDestination();
+
+            launchSynth = new Tone.NoiseSynth({
+                noise: { type: 'pink' },
+                envelope: {
+                    attack: 0.005,
+                    decay: 0.15,
+                    sustain: 0.05,
+                    release: 0.3,
+                },
+            }).connect(reverb);
+
+            explosionSynth = new Tone.NoiseSynth({
+                noise: { type: 'white' },
+                envelope: {
+                    attack: 0.005,
+                    decay: 0.08,
+                    sustain: 0,
+                    release: 0.15,
+                },
+            }).connect(reverb);
+        }
+
+        function random(min, max) { return Math.random() * (max - min) + min; }
+        function calculateDistance(p1x, p1y, p2x, p2y) {
+            const xDistance = p1x - p2x;
+            const yDistance = p1y - p2y;
+            return Math.sqrt(Math.pow(xDistance, 2) + Math.pow(yDistance, 2));
+        }
+
+        class Particle {
+            constructor(x, y, hue) {
+                this.x = x;
+                this.y = y;
+                this.coords = [];
+                this.coordCount = 6;
+                while (this.coordCount--) { this.coords.push([this.x, this.y]); }
+                this.angle = random(0, Math.PI * 2);
+                this.speed = random(3, 12);
+                this.friction = 0.94;
+                this.gravity = 1;
+                this.hue = hue;
+                this.brightness = random(70, 95);
+                this.alpha = 1;
+                this.decay = random(0.015, 0.03);
+            }
+
+            update() {
+                this.coords.pop();
+                this.coords.unshift([this.x, this.y]);
+                this.speed *= this.friction;
+                this.y += this.gravity;
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                this.alpha -= this.decay;
+                return !(this.alpha <= this.decay);
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.coords[this.coords.length - 1][0], this.coords[this.coords.length - 1][1]);
+                ctx.lineTo(this.x, this.y);
+                // Use colors that complement the theme
+                ctx.strokeStyle = `hsla(${this.hue}, 85%, ${this.brightness}%, ${this.alpha})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        class Firework {
+            constructor(startX, startY, targetX, targetY) {
+                this.x = startX;
+                this.y = startY;
+                this.startX = startX;
+                this.startY = startY;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.distanceToTarget = calculateDistance(startX, startY, targetX, targetY);
+                this.distanceTraveled = 0;
+                this.coords = [];
+                this.coordCount = 3;
+                while (this.coordCount--) { this.coords.push([this.x, this.y]); }
+                this.angle = Math.atan2(targetY - startY, targetX - startX);
+                this.speed = 2.5;
+                this.acceleration = 1.02;
+                this.brightness = random(70, 85);
+                this.targetRadius = 1;
+
+                if (audioStarted) {
+                    launchSynth.triggerAttackRelease('16n', Tone.now(), random(0.3, 0.6));
+                }
+            }
+
+            update() {
+                this.coords.pop();
+                this.coords.unshift([this.x, this.y]);
+                if (this.targetRadius < 8) { this.targetRadius += 0.3; } else { this.targetRadius = 1; }
+                this.speed *= this.acceleration;
+                const vx = Math.cos(this.angle) * this.speed;
+                const vy = Math.sin(this.angle) * this.speed;
+                this.distanceTraveled = calculateDistance(this.startX, this.startY, this.x + vx, this.y + vy);
+
+                if (this.distanceTraveled >= this.distanceToTarget) {
+                    createParticles(this.targetX, this.targetY);
+                    return false;
+                } else {
+                    this.x += vx;
+                    this.y += vy;
+                    return true;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.coords[this.coords.length - 1][0], this.coords[this.coords.length - 1][1]);
+                ctx.lineTo(this.x, this.y);
+                ctx.strokeStyle = `hsl(${hue}, 100%, ${this.brightness}%)`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(this.targetX, this.targetY, this.targetRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        function createParticles(x, y) {
+            if (audioStarted) {
+                explosionSynth.triggerAttackRelease("32n", Tone.now(), random(0.4, 0.7));
+            }
+            const particleCount = 35; // Moderate particle count
+            const particleHue = hue + random(-20, 20); // More subtle hue variation
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle(x, y, particleHue));
+            }
+        }
+
+        function loop() {
+            requestAnimationFrame(loop);
+            hue += 0.5; // Slower hue change for more consistent colors
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; // Much more subtle fade for cleaner trails
+            ctx.fillRect(0, 0, cw, ch);
+            ctx.globalCompositeOperation = 'lighter';
+
+            let i = fireworks.length;
+            while (i--) {
+                if (!fireworks[i].update()) {
+                    fireworks.splice(i, 1);
+                } else {
+                    fireworks[i].draw();
+                }
+            }
+
+            let j = particles.length;
+            while (j--) {
+                if (!particles[j].update()) {
+                    particles.splice(j, 1);
+                } else {
+                    particles[j].draw();
+                }
+            }
+
+            if (timerTick >= timerTotal) {
+                if (!isMouseDown) {
+                    fireworks.push(new Firework(cw / 2, ch, random(cw * 0.2, cw * 0.8), random(ch * 0.1, ch * 0.4)));
+                    timerTick = 0;
+                }
+            } else {
+                timerTick++;
+            }
+        }
+
+        function startAudio() {
+            if (audioStarted) return;
+            Tone.start().then(() => {
+                audioStarted = true;
+                setupAudio();
+                document.body.removeEventListener('mousedown', startAudio);
+                document.body.removeEventListener('touchstart', startAudio);
+            });
+        }
+
+        document.body.addEventListener('mousedown', startAudio);
+        document.body.addEventListener('touchstart', startAudio);
+
+        window.addEventListener('resize', () => {
+            cw = window.innerWidth;
+            ch = window.innerHeight;
+            canvas.width = cw;
+            canvas.height = ch;
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isMouseDown = true;
+            mouseX = e.pageX;
+            mouseY = e.pageY;
+            fireworks.push(new Firework(cw / 2, ch, mouseX, mouseY));
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isMouseDown = true;
+            mouseX = e.touches[0].pageX;
+            mouseY = e.touches[0].pageY;
+            fireworks.push(new Firework(cw / 2, ch, mouseX, mouseY));
+        });
+
+        canvas.addEventListener('mouseup', () => { isMouseDown = false; });
+        canvas.addEventListener('touchend', () => { isMouseDown = false; });
+
+        window.onload = loop;
     </script>
 </body>
 </html>

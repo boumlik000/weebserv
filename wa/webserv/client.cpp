@@ -401,7 +401,6 @@ void Client::_buildautoindex(std::string location_path) {
            << "        }\n"
            << "        .index-table tr:hover {\n"
            << "            background: rgba(0, 140, 255, 0.1);\n"
-           << "            transform: translateX(5px);\n"
            << "        }\n"
            << "        .file-link {\n"
            << "            color: #ffffff80;\n"
