@@ -42,7 +42,7 @@ static void parseRangeHeader(const std::string& rangeStr, long long& start, long
 }
 // فـ client.cpp
 void Client::readRequest() {
-    const int BUFFER_SIZE = 1024;
+    const int BUFFER_SIZE = 4096;
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read;
     if(_state == AWAITING_REQUEST)
@@ -71,7 +71,7 @@ void Client::readRequest() {
 }
 
 bool Client::readbody() {
-    const int BUFFER_SIZE = 1024;
+    const int BUFFER_SIZE = 4096;
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read;
     bytes_read = recv(_fd, buffer, BUFFER_SIZE, 0);
@@ -82,7 +82,7 @@ bool Client::readbody() {
 
         if(_bodySize > _config.getMaxSize())
         {
-            _buildErrorResponse(400);
+            _buildErrorResponse(413);
             return true;
         }
         _file.write(_requestBuffer.data(), _requestBuffer.size());
