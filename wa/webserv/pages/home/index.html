@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Good Fellas</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #0b0b2b, #1b2735 70%, #090a0f);
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Updated fireworks canvas - removed blur, increased opacity, better blending */
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0.7;
+            mix-blend-mode: screen;
+            pointer-events: auto;
+        }
+
+        .info-text {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            pointer-events: none; 
+        }
+
+        /* Stars behind everything */
+        .stars {
+            width: 1px;
+            height: 1px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: white;
+            box-shadow: 2vw 5vh 2px white, 10vw 8vh 2px white, 15vw 15vh 1px white,
+                22vw 22vh 1px white, 28vw 12vh 2px white, 32vw 32vh 1px white,
+                38vw 18vh 2px white, 42vw 35vh 1px white, 48vw 25vh 2px white,
+                53vw 42vh 1px white, 58vw 15vh 2px white, 63vw 38vh 1px white,
+                68vw 28vh 2px white, 73vw 45vh 1px white, 78vw 32vh 2px white,
+                83vw 48vh 1px white, 88vw 20vh 2px white, 93vw 52vh 1px white,
+                98vw 35vh 2px white, 5vw 60vh 1px white, 12vw 65vh 2px white,
+                18vw 72vh 1px white, 25vw 78vh 2px white, 30vw 85vh 1px white,
+                35vw 68vh 2px white, 40vw 82vh 1px white, 45vw 92vh 2px white,
+                50vw 75vh 1px white, 55vw 88vh 2px white, 60vw 95vh 1px white,
+                65vw 72vh 2px white, 70vw 85vh 1px white, 75vw 78vh 2px white,
+                80vw 92vh 1px white, 85vw 82vh 2px white, 90vw 88vh 1px white,
+                95vw 75vh 2px white;
+            animation: twinkle 8s infinite linear;
+            z-index: -100;
+        }
+
+        .shooting-star {
+            position: fixed;
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, rgb(255, 255, 255));
+            animation: shoot 3s infinite ease-in;
+            z-index: -99;
+        }
+
+        .shooting-star:nth-child(2) {
+            top: 20%;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .shooting-star:nth-child(3) {
+            top: 35%;
+            left: -100px;
+            animation-delay: 1s;
+        }
+
+        .shooting-star:nth-child(4) {
+            top: 50%;
+            left: -100px;
+            animation-delay: 2s;
+        }
+
+        .shooting-star:nth-child(5) {
+            top: 65%;
+            left: -100px;
+            animation-delay: 0.5s;
+        }
+
+        .shooting-star:nth-child(6) {
+            top: 80%;
+            left: -100px;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.8;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        @keyframes shoot {
+            0% {
+                transform: translateX(0) translateY(0) rotate(25deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(120vw) translateY(50vh) rotate(25deg);
+                opacity: 0;
+            }
+        }
+
+        /* Additional twinkling stars with different animation timing */
+        .stars::after {
+            content: "";
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            background: rgb(255, 65, 65);
+            box-shadow: 8vw 12vh 2px white, 16vw 18vh 1px white, 24vw 25vh 2px white,
+                33vw 15vh 1px white, 41vw 28vh 2px white, 49vw 35vh 1px white,
+                57vw 22vh 2px white, 65vw 42vh 1px white, 73vw 28vh 2px white,
+                81vw 48vh 1px white, 89vw 32vh 2px white, 97vw 45vh 1px white,
+                3vw 68vh 2px white, 11vw 75vh 1px white, 19vw 82vh 2px white,
+                27vw 88vh 1px white, 35vw 72vh 2px white, 43vw 85vh 1px white,
+                51vw 92vh 2px white, 59vw 78vh 1px white;
+            animation: twinkle 6s infinite linear reverse;
+        }
+
+        .title {
+            max-width: 100%;
+            height: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 1200px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 4rem;
+            flex-wrap: wrap;
+        }
+
+        /* GET button with hover expand functionality */
+        .get-button-wrapper,
+        .post-button-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .expanded-get-buttons,.expanded-post-buttons {
+            position: absolute;
+            top: 80px; /* Position below the main button */
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            display: flex;
+            gap: 15px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 25;
+        }
+
+        .get-button-wrapper:hover .expanded-get-buttons ,
+        .post-button-wrapper:hover .expanded-post-buttons  {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .expand-get-btn,
+        .expand-post-btn {
+            padding: 15px 25px;
+            text-transform: uppercase;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #ffffff80;
+            text-shadow: none;
+            background: transparent;
+            cursor: pointer;
+            box-shadow: transparent;
+            border: 1px solid #ffffff80;
+            transition: 0.5s ease;
+            user-select: none;
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        .expand-get-btn:hover,
+        .expand-get-btn:focus,
+        .expand-post-btn:hover,
+        .expand-post-btn:focus {
+            color: #ffffff;
+            background: #008cff;
+            border: 1px solid #008cff;
+            text-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff;
+            box-shadow: 0 0 5px #008cff, 0 0 20px #008cff, 0 0 50px #008cff,
+                0 0 100px #008cff;
+            transform: translateY(-2px);
+        }
+
+        .expand-get-btn:nth-child(1),
+         .expand-post-btn:nth-child(1){
+            animation-delay: 0.1s;
+        }
+
+        .expand-get-btn:nth-child(2),
+         .expand-post-btn:nth-child(2){
+            animation-delay: 0.2s;
+        }
+
+        .get-button-wrapper:hover .expand-get-btn,
+        .post-button-wrapper:hover .expand-post-btn {
+            animation: slideInUp 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes slideInUp {
+            0% {
+                transform: translateY(10px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Regular buttons styling */
+        button {
+            padding: 20px 40px;
+            text-transform: uppercase;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 500;
+            color: #ffffff80;
+            text-shadow: none;
+            background: transparent;
+            cursor: pointer;
+            box-shadow: transparent;
+            border: 1px solid #ffffff80;
+            transition: 0.5s ease;
+            user-select: none;
+            min-width: 120px;
+            position: relative;
+            overflow: hidden;
+            z-index: 20;
+        }
+        .a-delete{
+            color: #ffffff80;
+            text-decoration: none;
+        }
+        button:hover,
+        button:focus {
+            color: #ffffff;
+            background: #008cff;
+            border: 1px solid #008cff;
+            text-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff;
+            box-shadow: 0 0 5px #008cff, 0 0 20px #008cff, 0 0 50px #008cff,
+                0 0 100px #008cff;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+        
+        /* Additional atmospheric effects */
+        .bg-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .bg-effects::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 140, 255, 0.03) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .button-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 1.5rem;
+            }
+            
+            button {
+                width: 200px;
+            }
+
+            .expanded-get-buttons,
+             .expanded-post-buttons{
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+    <!-- dial fire works -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Stars and shooting stars in the background -->
+    <div class="stars"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    
+    <img src="Group1.webp" alt="Title" class="title"> 
+    <div class="container">
+        <div class="button-container">
+            <div class="get-button-wrapper">
+                <button onclick="handleClick('GET')">GET</button>
+                <div class="expanded-get-buttons">
+                    <a href="./Get/Get.html" class="expand-get-btn" onclick="handleClick('GET')">Get</a>
+                    <a href="./get/get-cgi.html"  class="expand-get-btn" onclick="handleClick('GET CGI')">Get CGI</a>
+                </div>
+            </div>
+            <div class="post-button-wrapper">
+                <button onclick="handleClick('POST')">POST</button>
+                <div class="expanded-post-buttons">
+                    <a href="./Post/Post.html" class="expand-post-btn" onclick="handleClick('POST')">Post</a>
+                    <a href="./post/post-cgi.html" class="expand-post-btn" onclick="handleClick('POST CGI')">Post CGI</a>
+                </div>
+            </div>
+            
+            <button onclick="handleClick('DELETE')">
+                <a href="./Delete/delete.html" class="a-delete">DELETE</a>
+            </button>
+        </div>
+    </div>
+    <canvas id="fireworksCanvas"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <script>
+        function handleClick(method) {
+            console.log(`${method} request triggered`);
+            // Add your API logic here
+        }
+
+        // Add some interactive sparkle effects
+        document.addEventListener('mousemove', (e) => {
+            if (Math.random() > 0.98) {
+                createSparkle(e.clientX, e.clientY);
+            }
+        });
+
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.style.cssText = `
+                position: fixed;
+                left: ${x}px;
+                top: ${y}px;
+                width: 4px;
+                height: 4px;
+                background: #008cff;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 1000;
+                box-shadow: 0 0 10px #008cff;
+                animation: sparkleAnim 1s ease-out forwards;
+            `;
+            
+            document.body.appendChild(sparkle);
+            
+            setTimeout(() => {
+                sparkle.remove();
+            }, 1000);
+        }
+
+        // Add sparkle animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes sparkleAnim {
+                0% { opacity: 1; transform: scale(0); }
+                50% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Updated fireworks system with better colors and cleaner appearance
+        const canvas = document.getElementById('fireworksCanvas');
+        const ctx = canvas.getContext('2d');
+        const infoText = document.getElementById('infoText');
+        let cw = window.innerWidth;
+        let ch = window.innerHeight;
+        canvas.width = cw;
+        canvas.height = ch;
+
+        let fireworks = [];
+        let particles = [];
+        let hue = 200; // Start with blue-ish colors to match theme
+        let timerTick = 0;
+        let timerTotal = 120; // Less frequent automatic fireworks
+        let isMouseDown = false;
+        let mouseX, mouseY;
+        let audioStarted = false;
+
+        let launchSynth, explosionSynth, reverb;
+
+        function setupAudio() {
+            reverb = new Tone.Reverb({
+                decay: 3,
+                preDelay: 0.01,
+                wet: 0.2
+            }).toDestination();
+
+            launchSynth = new Tone.NoiseSynth({
+                noise: { type: 'pink' },
+                envelope: {
+                    attack: 0.005,
+                    decay: 0.15,
+                    sustain: 0.05,
+                    release: 0.3,
+                },
+            }).connect(reverb);
+
+            explosionSynth = new Tone.NoiseSynth({
+                noise: { type: 'white' },
+                envelope: {
+                    attack: 0.005,
+                    decay: 0.08,
+                    sustain: 0,
+                    release: 0.15,
+                },
+            }).connect(reverb);
+        }
+
+        function random(min, max) { return Math.random() * (max - min) + min; }
+        function calculateDistance(p1x, p1y, p2x, p2y) {
+            const xDistance = p1x - p2x;
+            const yDistance = p1y - p2y;
+            return Math.sqrt(Math.pow(xDistance, 2) + Math.pow(yDistance, 2));
+        }
+
+        class Particle {
+            constructor(x, y, hue) {
+                this.x = x;
+                this.y = y;
+                this.coords = [];
+                this.coordCount = 6;
+                while (this.coordCount--) { this.coords.push([this.x, this.y]); }
+                this.angle = random(0, Math.PI * 2);
+                this.speed = random(3, 12);
+                this.friction = 0.94;
+                this.gravity = 1;
+                this.hue = hue;
+                this.brightness = random(70, 95);
+                this.alpha = 1;
+                this.decay = random(0.015, 0.03);
+            }
+
+            update() {
+                this.coords.pop();
+                this.coords.unshift([this.x, this.y]);
+                this.speed *= this.friction;
+                this.y += this.gravity;
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                this.alpha -= this.decay;
+                return !(this.alpha <= this.decay);
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.coords[this.coords.length - 1][0], this.coords[this.coords.length - 1][1]);
+                ctx.lineTo(this.x, this.y);
+                // Use colors that complement the theme
+                ctx.strokeStyle = `hsla(${this.hue}, 85%, ${this.brightness}%, ${this.alpha})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        class Firework {
+            constructor(startX, startY, targetX, targetY) {
+                this.x = startX;
+                this.y = startY;
+                this.startX = startX;
+                this.startY = startY;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.distanceToTarget = calculateDistance(startX, startY, targetX, targetY);
+                this.distanceTraveled = 0;
+                this.coords = [];
+                this.coordCount = 3;
+                while (this.coordCount--) { this.coords.push([this.x, this.y]); }
+                this.angle = Math.atan2(targetY - startY, targetX - startX);
+                this.speed = 2.5;
+                this.acceleration = 1.02;
+                this.brightness = random(70, 85);
+                this.targetRadius = 1;
+
+                if (audioStarted) {
+                    launchSynth.triggerAttackRelease('16n', Tone.now(), random(0.3, 0.6));
+                }
+            }
+
+            update() {
+                this.coords.pop();
+                this.coords.unshift([this.x, this.y]);
+                if (this.targetRadius < 8) { this.targetRadius += 0.3; } else { this.targetRadius = 1; }
+                this.speed *= this.acceleration;
+                const vx = Math.cos(this.angle) * this.speed;
+                const vy = Math.sin(this.angle) * this.speed;
+                this.distanceTraveled = calculateDistance(this.startX, this.startY, this.x + vx, this.y + vy);
+
+                if (this.distanceTraveled >= this.distanceToTarget) {
+                    createParticles(this.targetX, this.targetY);
+                    return false;
+                } else {
+                    this.x += vx;
+                    this.y += vy;
+                    return true;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.coords[this.coords.length - 1][0], this.coords[this.coords.length - 1][1]);
+                ctx.lineTo(this.x, this.y);
+                ctx.strokeStyle = `hsl(${hue}, 100%, ${this.brightness}%)`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(this.targetX, this.targetY, this.targetRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        function createParticles(x, y) {
+            if (audioStarted) {
+                explosionSynth.triggerAttackRelease("32n", Tone.now(), random(0.4, 0.7));
+            }
+            const particleCount = 35; // Moderate particle count
+            const particleHue = hue + random(-20, 20); // More subtle hue variation
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle(x, y, particleHue));
+            }
+        }
+
+        function loop() {
+            requestAnimationFrame(loop);
+            hue += 0.5; // Slower hue change for more consistent colors
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; // Much more subtle fade for cleaner trails
+            ctx.fillRect(0, 0, cw, ch);
+            ctx.globalCompositeOperation = 'lighter';
+
+            let i = fireworks.length;
+            while (i--) {
+                if (!fireworks[i].update()) {
+                    fireworks.splice(i, 1);
+                } else {
+                    fireworks[i].draw();
+                }
+            }
+
+            let j = particles.length;
+            while (j--) {
+                if (!particles[j].update()) {
+                    particles.splice(j, 1);
+                } else {
+                    particles[j].draw();
+                }
+            }
+
+            if (timerTick >= timerTotal) {
+                if (!isMouseDown) {
+                    fireworks.push(new Firework(cw / 2, ch, random(cw * 0.2, cw * 0.8), random(ch * 0.1, ch * 0.4)));
+                    timerTick = 0;
+                }
+            } else {
+                timerTick++;
+            }
+        }
+
+        function startAudio() {
+            if (audioStarted) return;
+            Tone.start().then(() => {
+                audioStarted = true;
+                setupAudio();
+                document.body.removeEventListener('mousedown', startAudio);
+                document.body.removeEventListener('touchstart', startAudio);
+            });
+        }
+
+        document.body.addEventListener('mousedown', startAudio);
+        document.body.addEventListener('touchstart', startAudio);
+
+        window.addEventListener('resize', () => {
+            cw = window.innerWidth;
+            ch = window.innerHeight;
+            canvas.width = cw;
+            canvas.height = ch;
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isMouseDown = true;
+            mouseX = e.pageX;
+            mouseY = e.pageY;
+            fireworks.push(new Firework(cw / 2, ch, mouseX, mouseY));
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isMouseDown = true;
+            mouseX = e.touches[0].pageX;
+            mouseY = e.touches[0].pageY;
+            fireworks.push(new Firework(cw / 2, ch, mouseX, mouseY));
+        });
+
+        canvas.addEventListener('mouseup', () => { isMouseDown = false; });
+        canvas.addEventListener('touchend', () => { isMouseDown = false; });
+
+        window.onload = loop;
+    </script>
+</body>
+</html>
