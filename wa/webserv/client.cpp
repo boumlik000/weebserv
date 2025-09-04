@@ -830,15 +830,38 @@ void Client::_handlePost(const LocationConfig& location) {
             }
             
             std::string name = generateRandomName();
-            std::string uploadPath = location.upload + "/" + name + ".raw";
+            std::string uploadPath = location.upload + "/" + name + ".png";
             std::cout << "=====================================upload file create====================" << uploadPath << std::endl;
                 _file.open(uploadPath.c_str());
                 _state = UPLOAD_FILE;
 
             if(!_file.is_open()) {
                 _buildErrorResponse(500);
+                 std::cerr << "--------------------------------------------------------------------------" << std::endl;
                 return;
             }
+        _bodySize = _bodySize + _requestBuffer.size();
+        if(_bodySize > _config.getMaxSize())
+        {
+            _buildErrorResponse(400);
+            return;
+        }
+        _file.write(_requestBuffer.data(), _requestBuffer.size());
+        _requestBuffer.clear();
+        _lastActivity = time(NULL);
+       
+        if(_bodySize >= _content_len)
+        {
+                _httpResponse.setStatusCode(201);
+                _httpResponse.setStatusMessage("Created");
+                std::string body = "<html><body><h1>201 Created</h1><p>Resource has been created successfully.</p></body></html>";
+                _httpResponse.setBody(body);
+                _httpResponse.addHeader("Content-Type", "text/html");
+                _httpResponse.addHeader("Content-Length", SSTR(_httpResponse.getBody().size()));
+
+                _state = SENDING_RESPONSE;
+            return;
+        }
         }
     }
     
