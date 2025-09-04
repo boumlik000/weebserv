@@ -42,109 +42,123 @@ static void parseRangeHeader(const std::string& rangeStr, long long& start, long
 }
 // فـ client.cpp
 void Client::readRequest() {
-    const int BUFFER_SIZE = 1024;
+    const int BUFFER_SIZE = 1024; // Kber chwiya l buffer bach ykoun adaa2 7sen
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read;
     
-    bytes_read = recv(_fd, buffer, BUFFER_SIZE, 0);
-    if (bytes_read > 0) {
-        _lastActivity = time(NULL); // هادي خاص تزيدها فالكود ديال timeout
-        _requestBuffer.append(buffer, bytes_read);
-    } else if (bytes_read == 0) {
-        _state = DONE; // العميل سد الإتصال
-    } else {
-        if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            return ; // خطأ حقيقي فالشبكة
-        }
-        else
-            _state = DONE;
-    }
-}
-
-void Client::readbody() {
-    const int BUFFER_SIZE = 1024;
-    char buffer[BUFFER_SIZE];
-    ssize_t bytes_read;
-    bytes_read = recv(_fd, buffer, BUFFER_SIZE, 0);
-    if (bytes_read > 0) {
-        _requestBuffer.append(buffer, bytes_read);
-        _bodySize = _bodySize + bytes_read;
-        if(_bodySize > _config.getMaxSize())
-        {
-            _buildErrorResponse(400);
-            return;
-        }
-        _file.write(_requestBuffer.data(), _requestBuffer.size());
-        _requestBuffer.clear();
+    // B9a t9ra tant que kayna data w l buffer dial socket mamsdoudch
+    while ((bytes_read = recv(_fd, buffer, BUFFER_SIZE, 0)) > 0) {
         _lastActivity = time(NULL);
-        if(_bodySize >= _content_len)
-        {
-                _httpResponse.setStatusCode(201);
-                _httpResponse.setStatusMessage("Created");
-                std::string body = "<html><body><h1>201 Created</h1><p>Resource has been created successfully.</p></body></html>";
-                _httpResponse.setBody(body);
-                _httpResponse.addHeader("Content-Type", "text/html");
-                _httpResponse.addHeader("Content-Length", SSTR(_httpResponse.getBody().size()));
+        _requestBuffer.append(buffer, bytes_read);
+    }
 
-                _state = SENDING_RESPONSE;
-            return;
-        }
-    }else if (bytes_read == 0) {
-        _state = DONE; 
-    }else {
+    if (bytes_read == 0) {
+        _state = DONE; // Client ssed l'connection
+    } else if (bytes_read < 0) {
+        // Hna EAGAIN ma3lich, kan 3niw bih "mab9a mayt9ra daba"
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            return ; 
+            _state = DONE; // Ghalat khor, ssed l'connection
         }
-        else
-            _state = DONE;
     }
 }
+
+// void Client::readbody() {
+//     const int BUFFER_SIZE = 1024;
+//     char buffer[BUFFER_SIZE];
+//     ssize_t bytes_read;
+//     bytes_read = recv(_fd, buffer, BUFFER_SIZE, 0);
+//     if (bytes_read > 0) {
+//         _requestBuffer.append(buffer, bytes_read);
+//         _bodySize = _bodySize + bytes_read;
+//         if(_bodySize > _config.getMaxSize())
+//         {
+//             _buildErrorResponse(400);
+//             return;
+//         }
+//         _file.write(_requestBuffer.data(), _requestBuffer.size());
+//         _requestBuffer.clear();
+//         _lastActivity = time(NULL);
+//         if(_bodySize >= _content_len)
+//         {
+//                 _httpResponse.setStatusCode(201);
+//                 _httpResponse.setStatusMessage("Created");
+//                 std::string body = "<html><body><h1>201 Created</h1><p>Resource has been created successfully.</p></body></html>";
+//                 _httpResponse.setBody(body);
+//                 _httpResponse.addHeader("Content-Type", "text/html");
+//                 _httpResponse.addHeader("Content-Length", SSTR(_httpResponse.getBody().size()));
+
+//                 _state = SENDING_RESPONSE;
+//             return;
+//         }
+//     }else if (bytes_read == 0) {
+//         _state = DONE; 
+//     }else {
+//         if (errno != EAGAIN && errno != EWOULDBLOCK) {
+//             return ; 
+//         }
+//         else
+//             _state = DONE;
+//     }
+// }
 
 void Client::manageState() {
-    bool action_taken;
-    do {
-        action_taken = false; // كنفترضو أننا مغنديرو والو فهاد الدورة
+    // --- Mar7ala 1: Kankhedmo l'état l'7ali ---
 
-        // --- المرحلة 1: معالجة الإرسال ---
-        if (_state == SENDING_RESPONSE) {
-            sendResponse();
-            action_taken = true;
-        } else if (_state == SENDING_STATIC_FILE) {
-            _sendNextFileChunk();
-            action_taken = true;
-        }
-        
-        // فاش كنساليو شي مهمة، كنديرو reset وكنكملو الحلقة باش نشوفو واش كاين ما يدار
-        if (_state == DONE) {
-            _resetForNewRequest();
-            // action_taken كتبقى true باش الحلقة تعاود دور وتشوف واش كاين طلب جديد فالبافر
-        }
-
-        // --- المرحلة 2: معالجة الطلبات لي فالبافر ---
-        if (_state == AWAITING_REQUEST) {
-            size_t pos = _requestBuffer.find("\r\n\r\n");
-            
-            if (pos != std::string::npos) { // لقينا طلب كامل
-                action_taken = true; // درنا واحد الإجراء
-                std::string raw_request = _requestBuffer.substr(0, pos + 4);
-                _requestBuffer.erase(0, pos + 4); // كنحيدو الطلب لي غنعالجو
-                _httpRequest.parse(raw_request);
-            //     if (!_httpRequest.parse(raw_request)) {
-            //         // إلى فشل التحليل، يعني الطلب ماشي بصيغة HTTP صحيحة
-            //         _buildErrorResponse(400); // 400 Bad Request
-            //         return;
-            // } // كنعطيوها الطلب لي استخرجنا
-                _state = REQUEST_RECEIVED;
-                process(); // دابا process غتخدم على الطلب لي ديجا تـ parse
+    if (_state == SENDING_RESPONSE) {
+        sendResponse();
+    } else if (_state == SENDING_STATIC_FILE) {
+        _sendNextFileChunk();
+    } else if (_state == UPLOAD_FILE) {
+        // Kan7awlo nktbo dakchi li f buffer l'file
+        if (!_requestBuffer.empty()) {
+            _bodySize += _requestBuffer.size();
+            if (_bodySize > _config.getMaxSize()) {
+                _buildErrorResponse(413); // 413 Content Too Large
+            } else {
+                _file.write(_requestBuffer.data(), _requestBuffer.size());
+                _requestBuffer.clear();
+                _lastActivity = time(NULL);
             }
         }
-        if(_state == UPLOAD_FILE)
-        {
-            readbody();
-        }
 
-    } while (action_taken && _state != DONE); // كنبقاو ندورو مادام كنديرو شي حاجة ومزال متصلين
+        // WACH SLINA?
+        // Hna l'point l'mohim: Kan9arno dakchi li uploadina m3a Content-Length
+        if (_state == UPLOAD_FILE && _bodySize >= _content_len) {
+            _file.close(); // Saliyina, nsedo l'file
+            _httpResponse.setStatusCode(201);
+            _httpResponse.setStatusMessage("Created");
+            std::string body = "<html><body><h1>201 Created</h1><p>Resource has been created successfully.</p></body></html>";
+            _httpResponse.setBody(body);
+            _httpResponse.addHeader("Content-Type", "text/html");
+            _httpResponse.addHeader("Content-Length", SSTR(_httpResponse.getBody().size()));
+            _state = SENDING_RESPONSE;
+        }
+    }
+
+    // Fash kansaliw chi khdma, kandiro reset
+    if (_state == DONE) {
+        _resetForNewRequest();
+    }
+
+    // --- Mar7ala 2: Kanbdaw khdma jdida ila jat chi request ---
+    // HADI KHASHA TB9A DIMA KAT'EXECUTA ILA KAN L'STATE AWAITING_REQUEST
+    if (_state == AWAITING_REQUEST) {
+        size_t pos = _requestBuffer.find("\r\n\r\n");
+        
+        if (pos != std::string::npos) { // L9ina headers dial request kaml
+            std::string raw_request = _requestBuffer.substr(0, pos + 4);
+            _requestBuffer.erase(0, pos + 4); 
+            
+            if (!_httpRequest.parse(raw_request)) {
+                _buildErrorResponse(400); // 400 Bad Request
+            } else {
+                _state = REQUEST_RECEIVED;
+                process(); // L'body li kan laصe9 f headers rah ba9i f _requestBuffer
+            }
+        }
+    }
 }
+
 void Client::_resetForNewRequest() {
     if (!this->_requestBuffer.empty()) {
         std::cout << "\033[33mWARNING: About to clear a non-empty request buffer for fd "
@@ -830,38 +844,20 @@ void Client::_handlePost(const LocationConfig& location) {
             }
             
             std::string name = generateRandomName();
-            std::string uploadPath = location.upload + "/" + name + ".png";
-            std::cout << "=====================================upload file create====================" << uploadPath << std::endl;
-                _file.open(uploadPath.c_str());
-                _state = UPLOAD_FILE;
-
+            std::string uploadPath = location.upload + "/" + name + ".png"; // Dir l'extension li bghiti
+            
+            _file.open(uploadPath.c_str(), std::ios::binary); // Zid std::ios::binary
             if(!_file.is_open()) {
                 _buildErrorResponse(500);
-                 std::cerr << "--------------------------------------------------------------------------" << std::endl;
                 return;
             }
-        _bodySize = _bodySize + _requestBuffer.size();
-        if(_bodySize > _config.getMaxSize())
-        {
-            _buildErrorResponse(400);
-            return;
-        }
-        _file.write(_requestBuffer.data(), _requestBuffer.size());
-        _requestBuffer.clear();
-        _lastActivity = time(NULL);
-       
-        if(_bodySize >= _content_len)
-        {
-                _httpResponse.setStatusCode(201);
-                _httpResponse.setStatusMessage("Created");
-                std::string body = "<html><body><h1>201 Created</h1><p>Resource has been created successfully.</p></body></html>";
-                _httpResponse.setBody(body);
-                _httpResponse.addHeader("Content-Type", "text/html");
-                _httpResponse.addHeader("Content-Length", SSTR(_httpResponse.getBody().size()));
 
-                _state = SENDING_RESPONSE;
-            return;
-        }
+            _state = UPLOAD_FILE;
+            _bodySize = 0; // Kanch初始化 l'compteur
+
+            // HNA L'POINT L'MOHIM: Mab9inach kanكتبو hna
+            // Dakchi li f _requestBuffer ghadi yt'handle f manageState()
+            // Dak l'code li kan hna kayكتب, 7iydo.
         }
     }
     

@@ -489,33 +489,33 @@
         }
 
         function uploadFileAsOctetStream(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const arrayBuffer = e.target.result;
-                
-                // Create FormData with file as octet-stream
-                const formData = new FormData();
-                const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
-                formData.append('file', blob, file.name);
-                
-                // Example POST request (replace with your actual endpoint)
-                fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'Content-Type': 'application/octet-stream'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('File uploaded successfully:', data);
-                })
-                .catch(error => {
-                    console.error('Upload error:', error);
-                });
-            };
-            reader.readAsArrayBuffer(file);
+            // L'browser ghadi ytsklf y9ra l'file
+            // Kan7iydo FormData w kansifto l'file (li howa Blob f l'asl) nichan
+            
+            fetch('/', {
+                method: 'POST',
+                body: file, // <--- L'POINT L'MOHIM: SIFT L'FILE NICHAN
+                headers: {
+                    'Content-Type': 'application/octet-stream'
+                }
+            })
+            .then(response => {
+                console.log('Server response status:', response.status);
+                if(response.ok)
+                    return response.text(); // Wla .json() ila l'server kayrj3 JSON
+                else
+                    throw new Error('Server responded with status: ' + response.status);
+            })
+            .then(data => {
+                console.log('File uploaded successfully. Server says:', data);
+                alert('File uploaded successfully!');
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                alert('Upload failed. Check the console for details.');
+            });
         }
+
 
         function displayFile(file) {
             const filePreview = document.createElement('div');
