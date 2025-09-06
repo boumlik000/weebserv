@@ -78,6 +78,8 @@ private:
     std::vector<char> _fileChunkBuffer;
     size_t            _chunkBytesSent;
     std::ofstream     _file;
+    unsigned long long _availableSpace;
+    std::string _uploadPath;
 
     bool                _isRangeRequest;  // واش الطلب فيه Range header
     long long           _rangeStart;      // منين غيبدا الجزء

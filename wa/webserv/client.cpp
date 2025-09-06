@@ -6,7 +6,7 @@
 #include <sys/stat.h>   // For stat(), S_ISDIR()
 #include <ctime>        // For localtime(), strftime()
 #include <cstring>      // For strcmp()
-
+#include <sys/statvfs.h>
 
 template <typename T>
 static std::string SSTR(T o) {
@@ -42,7 +42,7 @@ static void parseRangeHeader(const std::string& rangeStr, long long& start, long
 }
 // فـ client.cpp
 void Client::readRequest() {
-    const int BUFFER_SIZE = 65536; // Kber chwiya l buffer bach ykoun adaa2 7sen
+    const int BUFFER_SIZE = 1024; // Kber chwiya l buffer bach ykoun adaa2 7sen
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read;
     
@@ -62,44 +62,7 @@ void Client::readRequest() {
     }
 }
 
-// void Client::readbody() {
-//     const int BUFFER_SIZE = 1024;
-//     char buffer[BUFFER_SIZE];
-//     ssize_t bytes_read;
-//     bytes_read = recv(_fd, buffer, BUFFER_SIZE, 0);
-//     if (bytes_read > 0) {
-//         _requestBuffer.append(buffer, bytes_read);
-//         _bodySize = _bodySize + bytes_read;
-//         if(_bodySize > _config.getMaxSize())
-//         {
-//             _buildErrorResponse(400);
-//             return;
-//         }
-//         _file.write(_requestBuffer.data(), _requestBuffer.size());
-//         _requestBuffer.clear();
-//         _lastActivity = time(NULL);
-//         if(_bodySize >= _content_len)
-//         {
-//                 _httpResponse.setStatusCode(201);
-//                 _httpResponse.setStatusMessage("Created");
-//                 std::string body = "<html><body><h1>201 Created</h1><p>Resource has been created successfully.</p></body></html>";
-//                 _httpResponse.setBody(body);
-//                 _httpResponse.addHeader("Content-Type", "text/html");
-//                 _httpResponse.addHeader("Content-Length", SSTR(_httpResponse.getBody().size()));
 
-//                 _state = SENDING_RESPONSE;
-//             return;
-//         }
-//     }else if (bytes_read == 0) {
-//         _state = DONE; 
-//     }else {
-//         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-//             return ; 
-//         }
-//         else
-//             _state = DONE;
-//     }
-// }
 
 // F client.cpp
 void Client::manageState() {
@@ -116,9 +79,26 @@ void Client::manageState() {
             if (_bodySize > _config.getMaxSize()) {
                 _buildErrorResponse(413); // 413 Content Too Large
             } else {
-                _file.write(_requestBuffer.data(), _requestBuffer.size());
-                _requestBuffer.clear();
-                _lastActivity = time(NULL);
+
+            struct statvfs _stat;
+            if (statvfs(_uploadPath.c_str(), &_stat) != 0) {
+                _buildErrorResponse(500);
+                return;
+            }
+
+            // Calculate available space in bytes
+            _availableSpace = _stat.f_bavail * _stat.f_frsize;
+
+               if (!_file.write(_requestBuffer.data(), _requestBuffer.size()) || _content_len > _availableSpace) {
+                    std::cerr << "Error: Failed to write to file!" << std::endl;
+                     _file.close() ;
+                    unlink(_uploadPath.c_str());
+                    _buildErrorResponse(507); // 507 Insufficient Storage
+                    return;
+                } else {
+                    _requestBuffer.clear();
+                    _lastActivity = time(NULL);
+                }
             }
         }
 
@@ -845,11 +825,27 @@ void Client::_handlePost(const LocationConfig& location) {
             }
             
             std::string name = generateRandomName();
-            std::string uploadPath = location.upload + "/" + name + ".png"; // Dir l'extension li bghiti
+            _uploadPath = location.upload + "/" + name + ".png"; // Dir l'extension li bghiti
             
-            _file.open(uploadPath.c_str(), std::ios::binary); // Zid std::ios::binary
-            if(!_file.is_open()) {
+            _file.open(_uploadPath.c_str(), std::ios::binary);
+
+            // Get available disk space
+            struct statvfs _stat;
+            if (statvfs(_uploadPath.c_str(), &_stat) != 0) {
                 _buildErrorResponse(500);
+                return;
+            }
+
+            // Calculate available space in bytes
+            _availableSpace = _stat.f_bavail * _stat.f_frsize;
+
+            if (!_file.is_open() || _content_len > _availableSpace) {
+                if (_file.is_open())
+                {
+                     _file.close() ;
+                    unlink(_uploadPath.c_str());
+                }
+                _buildErrorResponse(507); // 507 Insufficient Storage
                 return;
             }
 

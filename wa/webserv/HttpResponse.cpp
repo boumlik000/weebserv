@@ -1,7 +1,7 @@
 #include "HttpResponse.hpp"
 #include <sstream>
 #include <ctime> // باش نجبدو الوقت الحالي
-
+#include <iostream>
 // === Orthodox Canonical Form (OCF) ===
 
 HttpResponse::HttpResponse() : _statusCode(0) {}
@@ -106,8 +106,11 @@ std::string HttpResponse::buildResponseString(bool BODY) const {
 
     // 4. كنزيدو الـ Body
     // كنكتبو الـ body مباشرة من الـ vector<char>
-    if(BODY)
-        response_stream.write(&this->_body[0], this->_body.size());
+    if (BODY) {
+        if (!response_stream.write(&this->_body[0], this->_body.size())) {
+            std::cerr << "Error writing response body: " << std::endl;
+        }
+    }
 
     // كنرجعو كلشي مجموع فـ string واحد
     return response_stream.str();

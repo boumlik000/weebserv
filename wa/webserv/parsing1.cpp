@@ -58,6 +58,7 @@ bool ConfigFile::isValidErrorCode(int code) {
     valid_codes.insert(405);
     valid_codes.insert(408);
     valid_codes.insert(500);
+    valid_codes.insert(507);
     valid_codes.insert(501);
     valid_codes.insert(502);
     valid_codes.insert(503);
@@ -447,6 +448,7 @@ bool ConfigFile::parseConfigFile(const std::string& filename)
     default_codes.push_back(405);
     default_codes.push_back(408);
     default_codes.push_back(500);
+    default_codes.push_back(507);
     default_codes.push_back(501);
     default_codes.push_back(502);
     default_codes.push_back(503);

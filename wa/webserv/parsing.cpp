@@ -218,6 +218,8 @@ std::string ConfigFile::getErrorPageMessage(int status_code) const {
             return "Request Timeout";
         case 500:
             return "Internal Server Error";
+        case 507:
+            return "Insufficient Storage";
         case 501:
             return "Not Implemented";
         case 502:

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #0b0b2b, #1b2735 70%, #090a0f);
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Stars behind everything */
+        .stars {
+            width: 1px;
+            height: 1px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: white;
+            box-shadow: 2vw 5vh 2px white, 10vw 8vh 2px white, 15vw 15vh 1px white,
+                22vw 22vh 1px white, 28vw 12vh 2px white, 32vw 32vh 1px white,
+                38vw 18vh 2px white, 42vw 35vh 1px white, 48vw 25vh 2px white,
+                53vw 42vh 1px white, 58vw 15vh 2px white, 63vw 38vh 1px white,
+                68vw 28vh 2px white, 73vw 45vh 1px white, 78vw 32vh 2px white,
+                83vw 48vh 1px white, 88vw 20vh 2px white, 93vw 52vh 1px white,
+                98vw 35vh 2px white, 5vw 60vh 1px white, 12vw 65vh 2px white,
+                18vw 72vh 1px white, 25vw 78vh 2px white, 30vw 85vh 1px white,
+                35vw 68vh 2px white, 40vw 82vh 1px white, 45vw 92vh 2px white,
+                50vw 75vh 1px white, 55vw 88vh 2px white, 60vw 95vh 1px white,
+                65vw 72vh 2px white, 70vw 85vh 1px white, 75vw 78vh 2px white,
+                80vw 92vh 1px white, 85vw 82vh 2px white, 90vw 88vh 1px white,
+                95vw 75vh 2px white;
+            animation: twinkle 8s infinite linear;
+            z-index: -100;
+        }
+
+        .shooting-star {
+            position: fixed;
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, rgb(255, 255, 255));
+            animation: shoot 3s infinite ease-in;
+            z-index: -99;
+        }
+
+        .shooting-star:nth-child(2) {
+            top: 20%;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .shooting-star:nth-child(3) {
+            top: 35%;
+            left: -100px;
+            animation-delay: 1s;
+        }
+
+        .shooting-star:nth-child(4) {
+            top: 50%;
+            left: -100px;
+            animation-delay: 2s;
+        }
+
+        .shooting-star:nth-child(5) {
+            top: 65%;
+            left: -100px;
+            animation-delay: 0.5s;
+        }
+
+        .shooting-star:nth-child(6) {
+            top: 80%;
+            left: -100px;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.8;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        @keyframes shoot {
+            0% {
+                transform: translateX(0) translateY(0) rotate(25deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(120vw) translateY(50vh) rotate(25deg);
+                opacity: 0;
+            }
+        }
+
+        /* Additional twinkling stars */
+        .stars::after {
+            content: "";
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            background: rgb(255, 65, 65);
+            box-shadow: 8vw 12vh 2px white, 16vw 18vh 1px white, 24vw 25vh 2px white,
+                33vw 15vh 1px white, 41vw 28vh 2px white, 49vw 35vh 1px white,
+                57vw 22vh 2px white, 65vw 42vh 1px white, 73vw 28vh 2px white,
+                81vw 48vh 1px white, 89vw 32vh 2px white, 97vw 45vh 1px white,
+                3vw 68vh 2px white, 11vw 75vh 1px white, 19vw 82vh 2px white,
+                27vw 88vh 1px white, 35vw 72vh 2px white, 43vw 85vh 1px white,
+                51vw 92vh 2px white, 59vw 78vh 1px white;
+            animation: twinkle 6s infinite linear reverse;
+        }
+       
+
+        /* Add animated stroke effect directly to the text */
+        .error-title {
+            font-size: clamp(8rem, 20vw, 20rem);
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            color: transparent;
+            /* background: #1f5c70;
+            background: linear-gradient(90deg,rgba(31, 92, 112, 1) 0%, rgba(12, 33, 19, 0.57) 100%); */
+            background: linear-gradient(45deg, 
+                #ff006e, #fb5607, #ffbe0b, #8338ec, #3a86ff, #06ffa5);
+            background-size: 600% 600%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite alternate;
+            position: relative;
+            margin-bottom: 2rem;
+            z-index: 10;
+            -webkit-text-stroke: 4px transparent;
+            -webkit-text-stroke-color: rgba(255, 0, 110, 0.8);
+            filter: drop-shadow(0 0 15px rgba(255, 0, 110, 0.8)),
+                    drop-shadow(0 0 25px rgba(251, 86, 7, 0.6)),
+                    drop-shadow(0 0 35px rgba(255, 190, 11, 0.4));
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+                filter: hue-rotate(0deg) brightness(1.2) 
+                        drop-shadow(0 0 15px rgba(255, 0, 110, 1))
+                        drop-shadow(0 0 25px rgba(251, 86, 7, 0.8))
+                        drop-shadow(0 0 35px rgba(255, 190, 11, 0.6));
+                -webkit-text-stroke-color: rgba(255, 0, 110, 0.8);
+            }
+            100% {
+                background-position: 100% 50%;
+                filter: hue-rotate(90deg) brightness(1.5)
+                        drop-shadow(0 0 15px rgba(58, 134, 255, 1))
+                        drop-shadow(0 0 25px rgba(131, 56, 236, 0.8))
+                        drop-shadow(0 0 35px rgba(6, 255, 165, 0.6));
+                -webkit-text-stroke-color: rgba(58, 134, 255, 0.8);
+            }
+        }
+
+        /* Subtitle text */
+        .error-subtitle {
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            font-weight: 600;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            /* letter-spacing: 0.1em; */
+            animation: subtitlePulse 4s ease-in-out infinite;
+        }
+
+        .error-message {
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            color: #ffffff80;
+            text-align: center;
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+
+        @keyframes subtitlePulse {
+            0%, 100% {
+                opacity: 0.8;
+                transform: translateY(0);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(-5px);
+            }
+        }
+
+        /* Back button styled like your original buttons */
+        .back-button {
+            padding: 20px 40px;
+            text-transform: uppercase;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 500;
+            color: #ffffff80;
+            text-shadow: none;
+            background: transparent;
+            cursor: pointer;
+            box-shadow: transparent;
+            border: 1px solid #ffffff80;
+            transition: 0.5s ease;
+            user-select: none;
+            min-width: 180px;
+            position: relative;
+            overflow: hidden;
+            z-index: 20;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-button:hover,
+        .back-button:focus {
+            color: #ffffff;
+            background: #008cff;
+            border: 1px solid #008cff;
+            text-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff;
+            box-shadow: 0 0 5px #008cff, 0 0 20px #008cff, 0 0 50px #008cff,
+                0 0 100px #008cff;
+            transform: translateY(-2px);
+        }
+
+        .back-button:active {
+            transform: translateY(0);
+        }
+
+        /* Additional atmospheric effects */
+        .bg-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .bg-effects::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 140, 255, 0.03) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Container for all content */
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 1200px;
+            position: relative;
+            z-index: 10;
+            padding: 2rem;
+        }
+
+        /* Floating error particles */
+        .error-particle {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: linear-gradient(45deg, #ff006e, #3a86ff);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+            animation: floatParticle 6s infinite ease-in-out;
+        }
+
+        .error-particle:nth-child(odd) {
+            animation-delay: -2s;
+            background: linear-gradient(45deg, #ffbe0b, #8338ec);
+        }
+
+        .error-particle:nth-child(even) {
+            animation-delay: -4s;
+            background: linear-gradient(45deg, #fb5607, #06ffa5);
+        }
+
+        @keyframes floatParticle {
+            0%, 100% {
+                transform: translateY(0) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .error-title {
+                letter-spacing: 0.1em;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .back-button {
+                width: 90%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Stars and shooting stars in the background -->
+    <div class="stars"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    
+    <!-- Background atmospheric effects -->
+    <!-- <div class="bg-effects"></div> -->
+    
+    <div class="container">
+        <h1 class="error-title">507</h1>
+        <h2 class="error-subtitle">Insufficient Storage</h2>
+        <p class="error-message">
+            All systems temporarily offline! Our space station is undergoing maintenance in the cosmic dock.
+             Please stand by while we refuel the servers.
+        </p>
+        <a href="javascript:history.back()" class="back-button">Go Back</a>
+    </div>
+
+    <script>
+        // Create floating error particles
+        function createErrorParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'error-particle';
+            particle.style.left = Math.random() * 100 + 'vw';
+            particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+            document.body.appendChild(particle);
+            
+            setTimeout(() => {
+                particle.remove();
+            }, 8000);
+        }
+
+        // Generate particles periodically
+        setInterval(createErrorParticle, 800);
+
+        // Add interactive sparkle effects on mouse move
+        document.addEventListener('mousemove', (e) => {
+            if (Math.random() > 0.95) {
+                createSparkle(e.clientX, e.clientY);
+            }
+        });
+
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.style.cssText = `
+                position: fixed;
+                left: ${x}px;
+                top: ${y}px;
+                width: 4px;
+                height: 4px;
+                background: linear-gradient(45deg, #ff006e, #3a86ff);
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 1000;
+                box-shadow: 0 0 10px #ff006e;
+                animation: sparkleAnim 1s ease-out forwards;
+            `;
+            
+            document.body.appendChild(sparkle);
+            
+            setTimeout(() => {
+                sparkle.remove();
+            }, 1000);
+        }
+
+        // Add sparkle animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes sparkleAnim {
+                0% { opacity: 1; transform: scale(0); }
+                50% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Enhanced title effect on load
+        window.addEventListener('load', () => {
+            const title = document.querySelector('.error-title');
+            title.style.animation = 'gradientShift 3s ease-in-out infinite alternate, titleAppear 2s ease-out';
+            
+            const titleAppearStyle = document.createElement('style');
+            titleAppearStyle.textContent = `
+                @keyframes titleAppear {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.5) rotate(-10deg);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: scale(1) rotate(0deg);
+                    }
+                }
+            `;
+            document.head.appendChild(titleAppearStyle);
+        });
+    </script>
+</body>
+</html>
