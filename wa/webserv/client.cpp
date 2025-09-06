@@ -42,7 +42,7 @@ static void parseRangeHeader(const std::string& rangeStr, long long& start, long
 }
 // فـ client.cpp
 void Client::readRequest() {
-    const int BUFFER_SIZE = 1024; // Kber chwiya l buffer bach ykoun adaa2 7sen
+    const int BUFFER_SIZE = 65536; // Kber chwiya l buffer bach ykoun adaa2 7sen
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read;
     
@@ -101,6 +101,7 @@ void Client::readRequest() {
 //     }
 // }
 
+// F client.cpp
 void Client::manageState() {
     // --- Mar7ala 1: Kankhedmo l'état l'7ali ---
 
